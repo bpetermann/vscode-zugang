@@ -35,15 +35,11 @@ To install the extension:
 
 ## Version
 
-The current version is _v0.1.0_. Expect frequent updates as new features and improvements are implemented.
+The current version is _v0.2.0_. Expect frequent updates as new features and improvements are implemented.
 
 ## Usage Examples
 
 ![simplescreenrecorder-2024-08-15_23 16 27-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/8be37fc9-c96a-45ef-aaf4-bb4e93ea1b1a)
-
-## Inspiration
-
-This project drew inspiration from Manuel Matuzović's excellent book, [“Web Accessibility Cookbook”](https://www.oreilly.com/library/view/web-accessibility-cookbook/9781098145590/), a lecture by [chrcit](https://github.com/chrcit), and Mary Sutton's courses on [Frontend Masters](https://frontendmasters.com/courses/react-accessibility/introduction/)
 
 ## Contributing
 
