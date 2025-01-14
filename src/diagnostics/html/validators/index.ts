@@ -10,5 +10,6 @@ export { LinkValidator } from './Link';
 export { NavigationValidator } from './Navigation';
 export { RequiredValidator } from './Required';
 export { SectionValidator } from './Section';
+export { StyleValidator } from './Style';
 export { UniquenessValidator } from './Uniqueness';
 export { Validator } from './Validator';

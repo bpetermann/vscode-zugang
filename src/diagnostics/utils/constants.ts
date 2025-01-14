@@ -76,6 +76,9 @@ export const TYPESCRIPT_REACT = 'typescriptreact' as const;
 export const JSX_TEXT = 'JSXText' as const;
 export const JSX_MEMBER_EXPRESSION = 'JSXMemberExpression' as const;
 
+// CSS
+export const BG_COLOR = 'background-color' as const;
+
 // GENERIC
 export const GENERIC_TEXTS: readonly string[] = [
   'click me',
@@ -86,6 +89,7 @@ export const GENERIC_TEXTS: readonly string[] = [
   'click',
   'more',
 ] as const;
+
 export const GENERIC_ALT: readonly string[] = [
   '.jpg',
   '.png',

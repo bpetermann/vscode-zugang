@@ -17,6 +17,29 @@ import {
 
 export class HTMLElement {
   /**
+   * Extracts inline CSS styles from an HTML element and converts them into a key-value object.
+   *
+   * @param {Element} element - The HTML element to extract styles from.
+   * @returns {Record<string, string>} An object where keys are CSS property names and values are their corresponding styles.
+   */
+
+  static getStyles(element: Element): { [k: string]: string } {
+    const { style } = element.attribs;
+    const styles: { [key: string]: string } = {};
+
+    if (!style) {
+      return styles;
+    }
+
+    style.split(';').map((style) => {
+      const [key, value] = style.split(':').map((s) => s.trim());
+      styles[key] = value;
+    });
+
+    return styles;
+  }
+
+  /**
    * Returns the first child element of the given element.
    * @param {Element} element - The parent element from which to retrieve the first child.
    * @returns {Element | undefined} - The first child element, or `undefined` if none exists.
