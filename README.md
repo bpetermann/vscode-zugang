@@ -1,4 +1,4 @@
-# Zugang Hue Check &middot; ![Version](https://img.shields.io/visual-studio-marketplace/v/bpetermann.zugang) <img src="https://img.shields.io/badge/LICENSE-MIT-green"  />
+# Zugang &middot; ![Version](https://img.shields.io/visual-studio-marketplace/v/bpetermann.zugang) <img src="https://img.shields.io/badge/LICENSE-MIT-green"  />
 
 Zugang is a VS Code extension designed to improve the accessibility of your HTML and React/TypeScript (.tsx) code. By providing warnings and suggestions, it helps you meet accessibility standards in a structured and intuitive way.
 
