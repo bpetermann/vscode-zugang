@@ -284,4 +284,14 @@ suite('TSX Test Suite', () => {
 
     assert.strictEqual(message, messages.link.mail);
   });
+
+  test('Style color/background without sufficient ratio', async () => {
+    const button =
+      '<button style={{ color: "red", backgroundColor: "red", fontSize: 12, pdding: "8px" }}>click me</button>';
+
+    const document = await getDocument(button);
+    const { message } = generateDiagnostics(document)?.[0];
+
+    assert.strictEqual(message, messages.style.color);
+  });
 });

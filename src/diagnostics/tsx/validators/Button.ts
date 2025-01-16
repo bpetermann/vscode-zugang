@@ -1,3 +1,4 @@
+import { isRatioOk } from 'hue-check';
 import {
   ARIA_CHECKED,
   ARIA_LABEL,
@@ -25,6 +26,7 @@ export class ButtonValidator implements Validator {
       this.checkSwitchRole(node),
       this.checkTextContent(node),
       this.checkAbsractRole(node),
+      this.checkColorContrast(node),
     ].filter((error) => error instanceof Diagnostic);
   }
 
@@ -56,5 +58,19 @@ export class ButtonValidator implements Validator {
     if (abstractRole) {
       return new Diagnostic(messages.button.abstract + abstractRole, node.loc);
     }
+  }
+
+  private checkColorContrast(node: TSXElement): Diagnostic | undefined {
+    const { color, backgroundColor } = node.style;
+
+    if (
+      !color ||
+      !backgroundColor ||
+      isRatioOk(`${backgroundColor}`, `${color}`)
+    ) {
+      return undefined;
+    }
+
+    return new Diagnostic(messages.style.color, node.loc);
   }
 }
