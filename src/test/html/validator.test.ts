@@ -524,7 +524,7 @@ suite('Validator Test Suite', () => {
     assert.strictEqual(message, messages.aria.hidden);
   });
 
-  test('Style color without sufficient ratio', async () => {
+  test('Style color/background without sufficient ratio', async () => {
     const div = new Element('div', {
       style: 'background-color: red; color: red;',
     });
