@@ -1,4 +1,3 @@
-import { isRatioOk } from 'hue-check';
 import {
   ARIA_CHECKED,
   ARIA_LABEL,
@@ -12,7 +11,7 @@ import {
 import { messages } from '../../utils/messages';
 import { Diagnostic } from '../Diagnostic';
 import { TSXElement } from '../Element';
-import { Validator } from './Validator';
+import { Validator, Visitor } from './Validator';
 
 export class ButtonValidator implements Validator {
   #tags: string[] = [BUTTON];
@@ -26,7 +25,6 @@ export class ButtonValidator implements Validator {
       this.checkSwitchRole(node),
       this.checkTextContent(node),
       this.checkAbsractRole(node),
-      this.checkColorContrast(node),
     ].filter((error) => error instanceof Diagnostic);
   }
 
@@ -60,17 +58,7 @@ export class ButtonValidator implements Validator {
     }
   }
 
-  private checkColorContrast(node: TSXElement): Diagnostic | undefined {
-    const { color, backgroundColor } = node.style;
-
-    if (
-      !color ||
-      !backgroundColor ||
-      isRatioOk(`${backgroundColor}`, `${color}`)
-    ) {
-      return undefined;
-    }
-
-    return new Diagnostic(messages.style.color, node.loc);
+  accept<T>(visitor: Visitor<T>, node: TSXElement): T {
+    return visitor.validate(node);
   }
 }

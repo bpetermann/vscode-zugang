@@ -18,7 +18,16 @@ export const getDocument = (tsx: string) =>
 
 suite('TSX Test Suite', () => {
   test('should handle it gracefully if no validator is found', async () => {
-    const tsx = div(null);
+    const tsx = `<br></br>`;
+
+    const document = await getDocument(tsx);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.strictEqual(diagnostics.length, 0);
+  });
+
+  test('should handle it gracefully if handed unknown element', async () => {
+    const tsx = `<MyButton></MyButton>`;
 
     const document = await getDocument(tsx);
     const diagnostics = generateDiagnostics(document);
@@ -285,13 +294,43 @@ suite('TSX Test Suite', () => {
     assert.strictEqual(message, messages.link.mail);
   });
 
-  test('Style color/background without sufficient ratio', async () => {
+  test('<button> without sufficient color/background ratio', async () => {
     const button =
-      '<button style={{ color: "red", backgroundColor: "red", fontSize: 12, pdding: "8px" }}>click me</button>';
+      '<button style={{ color: "black", backgroundColor: "black"}}>click me</button>';
 
     const document = await getDocument(button);
     const { message } = generateDiagnostics(document)?.[0];
 
     assert.strictEqual(message, messages.style.color);
+  });
+
+  test('<div> without sufficient color/background ratio', async () => {
+    const div =
+      '<div style={{ color: "black", backgroundColor: "black"}}>click me</div>';
+
+    const document = await getDocument(div);
+    const { message } = generateDiagnostics(document)?.[0];
+
+    assert.strictEqual(message, messages.style.color);
+  });
+
+  test('<a> without sufficient color/background ratio', async () => {
+    const a =
+      '<a style={{ color: "black", backgroundColor: "black"}}>click me</a>';
+
+    const document = await getDocument(a);
+    const { message } = generateDiagnostics(document)?.[0];
+
+    assert.strictEqual(message, messages.style.color);
+  });
+
+  test('<button> with sufficient color/background ratio', async () => {
+    const button =
+      '<button style={{ color: "white", backgroundColor: "black"}}>click me</button>';
+
+    const document = await getDocument(button);
+    const errors = generateDiagnostics(document);
+
+    assert.strictEqual(errors.length, 0);
   });
 });

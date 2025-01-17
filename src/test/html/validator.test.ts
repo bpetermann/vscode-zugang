@@ -533,4 +533,14 @@ suite('Validator Test Suite', () => {
 
     assert.strictEqual(message, messages.style.color);
   });
+
+  test('Style color/background with sufficient ratio', async () => {
+    const div = new Element('div', {
+      style: 'background-color: white; color: black;',
+    });
+
+    const errors = new StyleValidator().validate([div]);
+
+    assert.strictEqual(errors.length, 0);
+  });
 });

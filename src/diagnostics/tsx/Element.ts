@@ -32,10 +32,10 @@ export class TSXElement {
 
   /**
    * Extracts inline CSS styles from an TSXElement and converts them into a key-value object.
-   * @returns {Record<string, string>} An object where keys are CSS property names and values are their corresponding styles.
+   * @returns {Record<string, string | number | boolean>} An object where keys are CSS property names and values are their corresponding styles.
    */
-  get style(): { [key: string]: string | number | boolean } {
-    const styles: { [key: string]: string | number | boolean } = {};
+  get style(): Record<string, string | number | boolean> {
+    const styles: Record<string, string | number | boolean> = {};
 
     const style = this.node.openingElement.attributes.find(
       (attr) => attr.type === JSX_ATTRIBUTE && attr.name.name === 'style'
