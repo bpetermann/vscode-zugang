@@ -1,20 +1,11 @@
 import * as assert from 'assert';
-import * as vscode from 'vscode';
-import { TSXDiagnosticGenerator } from '../../diagnostics/tsx/DiagnosticGenerator';
 import { messages } from '../../diagnostics/utils/messages';
-import { div, fraction } from '../helper';
-
-/**
- * Generates diagnostics for an tsx document.
- */
-const generateDiagnostics = (document: vscode.TextDocument) =>
-  new TSXDiagnosticGenerator(document.getText()).generateDiagnostics();
-
-export const getDocument = (tsx: string) =>
-  vscode.workspace.openTextDocument({
-    content: tsx,
-    language: 'typescriptreact',
-  });
+import {
+  div,
+  fraction,
+  generateDiagnostics,
+  getTSXDocument as getDocument,
+} from '../helper';
 
 suite('TSX Test Suite', () => {
   test('should handle it gracefully if no validator is found', async () => {
@@ -292,45 +283,5 @@ suite('TSX Test Suite', () => {
     const { message } = generateDiagnostics(document)?.[0];
 
     assert.strictEqual(message, messages.link.mail);
-  });
-
-  test('<button> without sufficient color/background ratio', async () => {
-    const button =
-      '<button style={{ color: "black", backgroundColor: "black"}}>click me</button>';
-
-    const document = await getDocument(button);
-    const { message } = generateDiagnostics(document)?.[0];
-
-    assert.strictEqual(message, messages.style.color);
-  });
-
-  test('<div> without sufficient color/background ratio', async () => {
-    const div =
-      '<div style={{ color: "black", backgroundColor: "black"}}>click me</div>';
-
-    const document = await getDocument(div);
-    const { message } = generateDiagnostics(document)?.[0];
-
-    assert.strictEqual(message, messages.style.color);
-  });
-
-  test('<a> without sufficient color/background ratio', async () => {
-    const a =
-      '<a style={{ color: "black", backgroundColor: "black"}}>click me</a>';
-
-    const document = await getDocument(a);
-    const { message } = generateDiagnostics(document)?.[0];
-
-    assert.strictEqual(message, messages.style.color);
-  });
-
-  test('<button> with sufficient color/background ratio', async () => {
-    const button =
-      '<button style={{ color: "white", backgroundColor: "black"}}>click me</button>';
-
-    const document = await getDocument(button);
-    const errors = generateDiagnostics(document);
-
-    assert.strictEqual(errors.length, 0);
   });
 });

@@ -81,6 +81,9 @@ export const OBJECT_PROPERTY = 'ObjectProperty' as const;
 
 // CSS
 export const BG_COLOR = 'background-color' as const;
+export const PX = 'px' as const;
+export const EM = 'em' as const;
+export const REM = 'rem' as const;
 
 // GENERIC
 export const GENERIC_TEXTS: readonly string[] = [
