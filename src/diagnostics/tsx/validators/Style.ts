@@ -1,16 +1,27 @@
+import { SourceLocation } from '@babel/types';
 import { isRatioOk } from 'hue-check';
-import { EM, PX, REM } from '../../utils/constants';
+import { EM, PROBLEMATIC_FONTS, PX, REM } from '../../utils/constants';
 import { messages } from '../../utils/messages';
 import { Diagnostic } from '../Diagnostic';
 import { TSXElement } from '../Element';
 import { Visitor } from './Validator';
 
+type StyleValue = string | number | boolean;
+type Location = SourceLocation | null | undefined;
+
 export class StyleValidator implements Visitor<Diagnostic[]> {
+  private style: Record<string, StyleValue> = {};
+  private loc: Location = undefined;
+
   validate(node: TSXElement): Diagnostic[] {
+    this.style = node.style;
+    this.loc = node.loc;
+
     return [
-      this.checkColorContrast(node),
-      this.checkFontSize(node),
-      this.checkLineHeight(node),
+      this.checkColorContrast(),
+      this.checkFontSize(),
+      this.checkFontFamily(),
+      this.checkLineHeight(),
     ].filter((error) => error instanceof Diagnostic);
   }
 
@@ -18,44 +29,58 @@ export class StyleValidator implements Visitor<Diagnostic[]> {
     return [];
   }
 
-  private checkColorContrast(node: TSXElement): Diagnostic | undefined {
-    const { color, backgroundColor } = node.style;
+  private checkColorContrast(): Diagnostic | undefined {
+    const { color, backgroundColor } = this.style;
 
     if (
-      !color ||
-      !backgroundColor ||
-      isRatioOk(`${backgroundColor}`, `${color}`)
+      color &&
+      backgroundColor &&
+      !isRatioOk(`${backgroundColor}`, `${color}`)
     ) {
-      return undefined;
+      return new Diagnostic(messages.style.color, this.loc);
     }
-
-    return new Diagnostic(messages.style.color, node.loc);
   }
 
-  private checkFontSize(node: TSXElement): Diagnostic | undefined {
-    const { fontSize } = node.style;
+  private checkFontSize(): Diagnostic | undefined {
+    const { fontSize } = this.style;
 
-    if (!fontSize || this.isFontSizeSufficent(fontSize.toString())) {
-      return;
+    if (fontSize && !this.isFontSizeSufficent(fontSize.toString())) {
+      return new Diagnostic(messages.style.font, this.loc);
     }
-
-    return new Diagnostic(messages.style.font, node.loc);
   }
 
-  private checkLineHeight(node: TSXElement): Diagnostic | undefined {
-    const { fontSize, lineHeight } = node.style;
+  private checkFontFamily(): Diagnostic | undefined {
+    const { fontFamily } = this.style;
+
+    if (this.isFontProblematic(fontFamily?.toString() || '')) {
+      return new Diagnostic(messages.style.family + fontFamily, this.loc);
+    }
+  }
+
+  private checkLineHeight(): Diagnostic | undefined {
+    const { fontSize, lineHeight } = this.style;
 
     if (
-      !fontSize ||
-      !lineHeight ||
-      typeof lineHeight === 'boolean' ||
-      typeof fontSize === 'boolean' ||
-      this.isLineHeightSufficient(lineHeight, fontSize)
+      fontSize &&
+      lineHeight &&
+      typeof lineHeight !== 'boolean' &&
+      typeof fontSize !== 'boolean' &&
+      !this.isLineHeightSufficient(lineHeight, fontSize)
     ) {
-      return;
+      return new Diagnostic(messages.style.height, this.loc);
     }
+  }
 
-    return new Diagnostic(messages.style.height, node.loc);
+  private isFontProblematic(fontFamily: string): boolean {
+    const problematicFontsLower = PROBLEMATIC_FONTS.map((font) =>
+      font.toLowerCase()
+    );
+    return fontFamily
+      .toLowerCase()
+      .split(',')
+      .some((font) =>
+        problematicFontsLower.includes(font.trim().replace(/["']/g, ''))
+      );
   }
 
   private isFontSizeSufficent(

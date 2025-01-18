@@ -99,5 +99,7 @@ export const messages = {
     font: '[Zugang] Font sizes smaller than 9px may be difficult to read for many users, particularly those with low vision or on high-resolution screens. Ensuring text is at least 9px (0.563em/rem) helps maintain readability and accessibility across diverse displays and user needs.',
     height:
       '[Zugang] The line height should be at least 1.5 times the font size to ensure sufficient spacing between lines, improving readability and reducing eye strain, especially for users with visual or cognitive disabilities.',
+    family:
+      '[Zugang] The selected font is overly decorative and may reduce readability. Consider using more accessible fonts such as Arial, Verdana, or other sans-serif families. Font family: ',
   },
 };

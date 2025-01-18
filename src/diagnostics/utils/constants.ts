@@ -85,6 +85,24 @@ export const PX = 'px' as const;
 export const EM = 'em' as const;
 export const REM = 'rem' as const;
 
+export const PROBLEMATIC_FONTS = [
+  'Comic Sans MS',
+  'Papyrus',
+  'Brush Script',
+  'Vivaldi',
+  'Curlz MT',
+  'Chiller',
+  'Impact',
+  'Jokerman',
+  'Kristen ITC',
+  'Harrington',
+  'Broadway',
+  'Old English Text MT',
+  'Lucida Handwriting',
+  'Algerian',
+  'Playbill',
+];
+
 // GENERIC
 export const GENERIC_TEXTS: readonly string[] = [
   'click me',

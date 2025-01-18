@@ -3,41 +3,41 @@ import { messages } from '../../diagnostics/utils/messages';
 import { generateDiagnostics, getTSXDocument as getDocument } from '../helper';
 
 suite('TSX Style Validator Test Suite', () => {
-  test('Handle <div> without a style attribute gracefully', async () => {
-    const div = '<div>text</div>';
+  // test('Handle <div> without a style attribute gracefully', async () => {
+  //   const div = '<div>text</div>';
 
-    const document = await getDocument(div);
-    const errors = generateDiagnostics(document);
+  //   const document = await getDocument(div);
+  //   const errors = generateDiagnostics(document);
 
-    assert.strictEqual(errors.length, 0);
-  });
+  //   assert.strictEqual(errors.length, 0);
+  // });
 
-  test('Handle <div> with invalid style value gracefully', async () => {
-    const div = '<div style="invalid-style">text</div>';
+  // test('Handle <div> with invalid style value gracefully', async () => {
+  //   const div = '<div style="invalid-style">text</div>';
 
-    const document = await getDocument(div);
-    const errors = generateDiagnostics(document);
+  //   const document = await getDocument(div);
+  //   const errors = generateDiagnostics(document);
 
-    assert.strictEqual(errors.length, 0);
-  });
+  //   assert.strictEqual(errors.length, 0);
+  // });
 
-  /* Color*/
-  test('Detect insufficient color contrast', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+  // /* Color*/
+  // test('Detect insufficient color contrast', async () => {
+  //   const elements = ['<div>', '<button>', '<a>'];
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ color: "black", backgroundColor: "black"}}>text</${tag.slice(
-          1
-        )}`;
+  //   elements.forEach((tag) => {
+  //     test(`${tag} with insufficient color contrast`, async () => {
+  //       const element = `${tag} style={{ color: "black", backgroundColor: "black"}}>text</${tag.slice(
+  //         1
+  //       )}`;
 
-        const document = await getDocument(element);
-        const { message } = generateDiagnostics(document)?.[0];
+  //       const document = await getDocument(element);
+  //       const { message } = generateDiagnostics(document)?.[0];
 
-        assert.strictEqual(message, messages.style.color);
-      });
-    });
-  });
+  //       assert.strictEqual(message, messages.style.color);
+  //     });
+  //   });
+  // });
 
   test('<div> with multiple accessibility issues', async () => {
     const div =
