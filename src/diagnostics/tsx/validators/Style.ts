@@ -1,5 +1,6 @@
 import { SourceLocation } from '@babel/types';
 import { isRatioOk } from 'hue-check';
+import { DiagnosticSeverity } from 'vscode';
 import { EM, PROBLEMATIC_FONTS, PX, REM } from '../../utils/constants';
 import { messages } from '../../utils/messages';
 import { Diagnostic } from '../Diagnostic';
@@ -53,7 +54,11 @@ export class StyleValidator implements Visitor<Diagnostic[]> {
     const { fontFamily } = this.style;
 
     if (this.isFontProblematic(fontFamily?.toString() || '')) {
-      return new Diagnostic(messages.style.family + fontFamily, this.loc);
+      return new Diagnostic(
+        messages.style.family + fontFamily,
+        this.loc,
+        DiagnosticSeverity.Hint
+      );
     }
   }
 

@@ -2,46 +2,46 @@ import * as assert from 'assert';
 import { messages } from '../../diagnostics/utils/messages';
 import { generateDiagnostics, getTSXDocument as getDocument } from '../helper';
 
+const createElement = (tag: string, style: string) =>
+  `<${tag} style={{${style}}}>text</${tag}>`;
+
 suite('TSX Style Validator Test Suite', () => {
-  // test('Handle <div> without a style attribute gracefully', async () => {
-  //   const div = '<div>text</div>';
+  test('Handle <div> without a style attribute gracefully', async () => {
+    const div = '<div>text</div>';
 
-  //   const document = await getDocument(div);
-  //   const errors = generateDiagnostics(document);
+    const document = await getDocument(div);
+    const errors = generateDiagnostics(document);
 
-  //   assert.strictEqual(errors.length, 0);
-  // });
+    assert.strictEqual(errors.length, 0);
+  });
 
-  // test('Handle <div> with invalid style value gracefully', async () => {
-  //   const div = '<div style="invalid-style">text</div>';
+  test('Handle <div> with invalid style value gracefully', async () => {
+    const div = '<div style="invalid style">text</div>';
 
-  //   const document = await getDocument(div);
-  //   const errors = generateDiagnostics(document);
+    const document = await getDocument(div);
+    const errors = generateDiagnostics(document);
 
-  //   assert.strictEqual(errors.length, 0);
-  // });
+    assert.strictEqual(errors.length, 0);
+  });
 
-  // /* Color*/
-  // test('Detect insufficient color contrast', async () => {
-  //   const elements = ['<div>', '<button>', '<a>'];
+  /* Color*/
+  test('Detect insufficient color contrast', async () => {
+    const element = createElement(
+      'div',
+      'color: "black", backgroundColor: "black"'
+    );
 
-  //   elements.forEach((tag) => {
-  //     test(`${tag} with insufficient color contrast`, async () => {
-  //       const element = `${tag} style={{ color: "black", backgroundColor: "black"}}>text</${tag.slice(
-  //         1
-  //       )}`;
+    const document = await getDocument(element);
+    const { message } = generateDiagnostics(document)?.[0];
 
-  //       const document = await getDocument(element);
-  //       const { message } = generateDiagnostics(document)?.[0];
-
-  //       assert.strictEqual(message, messages.style.color);
-  //     });
-  //   });
-  // });
+    assert.strictEqual(message, messages.style.color);
+  });
 
   test('<div> with multiple accessibility issues', async () => {
-    const div =
-      '<div style={{ color: "black", backgroundColor: "black", fontSize: 4 }}>text</div>';
+    const div = createElement(
+      'div',
+      "color: 'black', backgroundColor: 'black',fontSize: 4"
+    );
 
     const document = await getDocument(div);
     const errorMessages = generateDiagnostics(document).map(
@@ -52,111 +52,76 @@ suite('TSX Style Validator Test Suite', () => {
     assert.ok(errorMessages.includes(messages.style.font));
   });
 
-  test('Pass validation for elements with sufficient color contrast', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+  test('Pass validation for <div> with sufficient color contrast', async () => {
+    const element = createElement(
+      'div',
+      'color: "black", backgroundColor: "white"'
+    );
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ color: "black", backgroundColor: "white"}}>text</${tag.slice(
-          1
-        )}`;
+    const document = await getDocument(element);
+    const errors = generateDiagnostics(document);
 
-        const document = await getDocument(element);
-        const errors = generateDiagnostics(document);
-
-        assert.strictEqual(errors.length, 0);
-      });
-    });
+    assert.strictEqual(errors.length, 0);
   });
 
-  /* Font Size*/
+  // /* Font Size*/
   test('Detect insufficient font size in elements', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+    const element = createElement('button', 'fontSize: 4');
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ fontSize: 4}}>text</${tag.slice(1)}`;
+    const document = await getDocument(element);
+    const { message } = generateDiagnostics(document)?.[0];
 
-        const document = await getDocument(element);
-        const { message } = generateDiagnostics(document)?.[0];
-
-        assert.strictEqual(message, messages.style.font);
-      });
-    });
+    assert.strictEqual(message, messages.style.font);
   });
 
   /* Line Height*/
   test('Detect insufficient line height (unitless) in elements', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+    const element = createElement('button', 'fontSize: 18, lineHeight: 1');
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ fontSize: 18, lineHeight: 1}}>text</${tag.slice(
-          1
-        )}`;
+    const document = await getDocument(element);
+    const { message } = generateDiagnostics(document)?.[0];
 
-        const document = await getDocument(element);
-        const { message } = generateDiagnostics(document)?.[0];
-
-        assert.strictEqual(message, messages.style.height);
-      });
-    });
+    assert.strictEqual(message, messages.style.height);
   });
 
   test('Detect insufficient line height (px) in elements', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+    const element = createElement(
+      'div',
+      'fontSize: "18px", lineHeight: "16px"'
+    );
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ fontSize: "18px", lineHeight: "16px"}}>text</${tag.slice(
-          1
-        )}`;
+    const document = await getDocument(element);
+    const { message } = generateDiagnostics(document)?.[0];
 
-        const document = await getDocument(element);
-        const { message } = generateDiagnostics(document)?.[0];
-
-        assert.strictEqual(message, messages.style.height);
-      });
-    });
+    assert.strictEqual(message, messages.style.height);
   });
 
   test('Detect insufficient line height (rem) in elements', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+    const element = createElement(
+      'div',
+      'fontSize: "1.125rem", lineHeight: "1rem"'
+    );
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ fontSize: "1.125rem", lineHeight: "1rem"}}>text</${tag.slice(
-          1
-        )}`;
+    const document = await getDocument(element);
+    const { message } = generateDiagnostics(document)?.[0];
 
-        const document = await getDocument(element);
-        const { message } = generateDiagnostics(document)?.[0];
-
-        assert.strictEqual(message, messages.style.height);
-      });
-    });
+    assert.strictEqual(message, messages.style.height);
   });
 
   test('Elements with sufficient lineHeight in px', async () => {
-    const elements = ['<div>', '<button>', '<a>'];
+    const element = createElement(
+      'button',
+      'fontSize: "16px", lineHeight: "24px"'
+    );
 
-    elements.forEach((tag) => {
-      test(`${tag} with insufficient color contrast`, async () => {
-        const element = `${tag} style={{ fontSize: "16px", lineHeight: "24px"}}>text</${tag.slice(
-          1
-        )}`;
+    const document = await getDocument(element);
+    const errors = generateDiagnostics(document);
 
-        const document = await getDocument(element);
-        const { message } = generateDiagnostics(document)?.[0];
-
-        assert.strictEqual(message, messages.style.height);
-      });
-    });
+    assert.strictEqual(errors.length, 0);
   });
 
   test('<div> with sufficient lineHeight in rem', async () => {
-    const div =
-      '<div style={{ fontSize: "1rem", lineHeight: "1.5rem"}}>text</div>';
+    const div = createElement('div', 'fontSize: "1rem", lineHeight: "1.5rem"');
 
     const document = await getDocument(div);
     const errors = generateDiagnostics(document);
@@ -165,8 +130,10 @@ suite('TSX Style Validator Test Suite', () => {
   });
 
   test('<div> with nested element having insufficient color contrast', async () => {
-    const div =
-      '<div><div style={{ color: "black", backgroundColor: "black"}}>nested text</div></div>';
+    const div = createElement(
+      'div',
+      'color: "black", backgroundColor: "black"'
+    );
 
     const document = await getDocument(div);
     const { message } = generateDiagnostics(document)?.[0];
@@ -175,12 +142,25 @@ suite('TSX Style Validator Test Suite', () => {
   });
 
   test('Pass validation for <div> with sufficient line height', async () => {
-    const div =
-      '<div style={{ fontSize: "1.125rem", lineHeight: 1.5}}>text</div>';
+    const element = createElement(
+      'div',
+      'fontSize: "1.125rem", lineHeight: 1.5'
+    );
 
-    const document = await getDocument(div);
+    const document = await getDocument(element);
     const errors = generateDiagnostics(document);
 
     assert.strictEqual(errors.length, 0);
+  });
+
+  /* Font family*/
+
+  test('Elements with problematic font family', async () => {
+    const element = createElement('div', 'fontFamily: "Chiller"');
+
+    const document = await getDocument(element);
+    const { message } = generateDiagnostics(document)?.[0];
+
+    assert.strictEqual(message, messages.style.family + 'Chiller');
   });
 });
