@@ -2,12 +2,14 @@ import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
 import * as jsx from '@babel/types';
 import * as vscode from 'vscode';
+import { Diagnostic } from './Diagnostic';
 import { TSXElement } from './Element';
 import {
   ButtonValidator,
   DivValidator,
   ImageValidator,
   LinkValidator,
+  StyleValidator,
 } from './validators';
 import { Validator } from './validators/Validator';
 
@@ -16,6 +18,7 @@ export class TSXDiagnosticGenerator {
 
   constructor(
     private text: string,
+    private styleValidator = new StyleValidator(),
     private validators: Validator[] = [
       new ButtonValidator(),
       new ImageValidator(),
@@ -46,20 +49,35 @@ export class TSXDiagnosticGenerator {
    */
   private checkElement(node: jsx.JSXElement): void {
     const element = new TSXElement(node);
-    const { name } = element;
 
-    if (!name) {
+    if (!element.name) {
       return;
     }
 
-    const validator = this.findValidator(name);
+    const validator = this.findValidator(element.name);
 
-    validator?.validate(element).forEach(({ diagnostic }) => {
-      this.diagnostics.push(diagnostic);
-    });
+    if (!validator) {
+      return;
+    }
+
+    this.diagnostics.push(
+      ...this.collectDiagnostics(element, validator).map(
+        ({ diagnostic }) => diagnostic
+      )
+    );
   }
 
-  private findValidator(name: string) {
+  private collectDiagnostics(
+    element: TSXElement,
+    validator: Validator
+  ): Diagnostic[] {
+    return [
+      ...validator.accept(this.styleValidator, element),
+      ...validator.validate(element),
+    ];
+  }
+
+  private findValidator(name: string): Validator | undefined {
     return this.validators.find(({ tags }) => tags.includes(name));
   }
 

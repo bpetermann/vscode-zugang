@@ -1,24 +1,24 @@
 import * as assert from 'assert';
-import * as vscode from 'vscode';
-import { TSXDiagnosticGenerator } from '../../diagnostics/tsx/DiagnosticGenerator';
 import { messages } from '../../diagnostics/utils/messages';
-import { div, fraction } from '../helper';
-
-/**
- * Generates diagnostics for an tsx document.
- */
-const generateDiagnostics = (document: vscode.TextDocument) =>
-  new TSXDiagnosticGenerator(document.getText()).generateDiagnostics();
-
-export const getDocument = (tsx: string) =>
-  vscode.workspace.openTextDocument({
-    content: tsx,
-    language: 'typescriptreact',
-  });
+import {
+  div,
+  fraction,
+  generateDiagnostics,
+  getTSXDocument as getDocument,
+} from '../helper';
 
 suite('TSX Test Suite', () => {
   test('should handle it gracefully if no validator is found', async () => {
-    const tsx = div(null);
+    const tsx = `<br></br>`;
+
+    const document = await getDocument(tsx);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.strictEqual(diagnostics.length, 0);
+  });
+
+  test('should handle it gracefully if handed unknown element', async () => {
+    const tsx = `<MyButton></MyButton>`;
 
     const document = await getDocument(tsx);
     const diagnostics = generateDiagnostics(document);

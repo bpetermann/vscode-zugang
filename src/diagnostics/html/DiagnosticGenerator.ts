@@ -17,6 +17,7 @@ import {
   NavigationValidator,
   RequiredValidator,
   SectionValidator,
+  StyleValidator,
   UniquenessValidator,
   Validator,
 } from './validators';
@@ -41,6 +42,7 @@ export class HTMLDiagnosticGenerator {
       new ImageValidator(),
       new SectionValidator(),
       new AriaValidator(),
+      new StyleValidator(),
     ]
   ) {}
 

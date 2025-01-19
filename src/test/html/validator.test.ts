@@ -13,6 +13,7 @@ import {
   NavigationValidator,
   RequiredValidator,
   SectionValidator,
+  StyleValidator,
   UniquenessValidator,
 } from '../../diagnostics/html/validators';
 import { messages } from '../../diagnostics/utils/messages';
@@ -521,5 +522,25 @@ suite('Validator Test Suite', () => {
     ])?.[0];
 
     assert.strictEqual(message, messages.aria.hidden);
+  });
+
+  test('Style color/background without sufficient ratio', async () => {
+    const div = new Element('div', {
+      style: 'background-color: red; color: red;',
+    });
+
+    const { message } = new StyleValidator().validate([div])?.[0];
+
+    assert.strictEqual(message, messages.style.color);
+  });
+
+  test('Style color/background with sufficient ratio', async () => {
+    const div = new Element('div', {
+      style: 'background-color: white; color: black;',
+    });
+
+    const errors = new StyleValidator().validate([div]);
+
+    assert.strictEqual(errors.length, 0);
   });
 });

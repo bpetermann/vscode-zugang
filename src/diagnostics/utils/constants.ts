@@ -75,6 +75,33 @@ export const STRING_LITERAL = 'StringLiteral' as const;
 export const TYPESCRIPT_REACT = 'typescriptreact' as const;
 export const JSX_TEXT = 'JSXText' as const;
 export const JSX_MEMBER_EXPRESSION = 'JSXMemberExpression' as const;
+export const EXPRESSION = 'expression' as const;
+export const OBJECT_EXPRESSION = 'ObjectExpression' as const;
+export const OBJECT_PROPERTY = 'ObjectProperty' as const;
+
+// CSS
+export const BG_COLOR = 'background-color' as const;
+export const PX = 'px' as const;
+export const EM = 'em' as const;
+export const REM = 'rem' as const;
+
+export const PROBLEMATIC_FONTS = [
+  'Comic Sans MS',
+  'Papyrus',
+  'Brush Script',
+  'Vivaldi',
+  'Curlz MT',
+  'Chiller',
+  'Impact',
+  'Jokerman',
+  'Kristen ITC',
+  'Harrington',
+  'Broadway',
+  'Old English Text MT',
+  'Lucida Handwriting',
+  'Algerian',
+  'Playbill',
+];
 
 // GENERIC
 export const GENERIC_TEXTS: readonly string[] = [
@@ -86,6 +113,7 @@ export const GENERIC_TEXTS: readonly string[] = [
   'click',
   'more',
 ] as const;
+
 export const GENERIC_ALT: readonly string[] = [
   '.jpg',
   '.png',

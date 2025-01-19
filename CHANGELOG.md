@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**TSX Validation:**
+
+- Validation of inline styles, ensuring adequate color contrast (e.g., `<button>`, `<div>` and `<a>`).
+
+**HTML Validation:**
+
+- Validation of inline styles, ensuring adequate color contrast.
+
 ## [0.2.0]- 2024-01-12
 
 ### Added

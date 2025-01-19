@@ -4,6 +4,7 @@ import {
   BUTTON,
   CONTENT_EDITABLE,
   DISABLED,
+  EXPRESSION,
   HREF,
   INERT,
   INPUT,
@@ -15,6 +16,8 @@ import {
   JSX_TEXT,
   LINK,
   NAME,
+  OBJECT_EXPRESSION,
+  OBJECT_PROPERTY,
   ROLE,
   SELECT,
   STRING_LITERAL,
@@ -26,6 +29,39 @@ import {
 
 export class TSXElement {
   constructor(private node: jsx.JSXElement) {}
+
+  /**
+   * Extracts inline CSS styles from an TSXElement and converts them into a key-value object.
+   * @returns {Record<string, string | number | boolean>} An object where keys are CSS property names and values are their corresponding styles.
+   */
+  get style(): Record<string, string | number | boolean> {
+    const styles: Record<string, string | number | boolean> = {};
+
+    const style = this.node.openingElement.attributes.find(
+      (attr) => attr.type === JSX_ATTRIBUTE && attr.name.name === 'style'
+    );
+
+    if (
+      style &&
+      VALUE in style &&
+      EXPRESSION in style[VALUE]! &&
+      style[VALUE][EXPRESSION].type === OBJECT_EXPRESSION
+    ) {
+      style.value.expression.properties.map((style) => {
+        if (style.type !== OBJECT_PROPERTY) {
+          return;
+        }
+
+        const { key, value } = style;
+
+        if (NAME in key && VALUE in value) {
+          styles[key.name] = value.value;
+        }
+      });
+    }
+
+    return styles;
+  }
 
   /**
    * Retrieves the source location of the JSX element.

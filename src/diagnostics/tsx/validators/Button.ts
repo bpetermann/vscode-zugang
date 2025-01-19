@@ -11,7 +11,7 @@ import {
 import { messages } from '../../utils/messages';
 import { Diagnostic } from '../Diagnostic';
 import { TSXElement } from '../Element';
-import { Validator } from './Validator';
+import { Validator, Visitor } from './Validator';
 
 export class ButtonValidator implements Validator {
   #tags: string[] = [BUTTON];
@@ -56,5 +56,9 @@ export class ButtonValidator implements Validator {
     if (abstractRole) {
       return new Diagnostic(messages.button.abstract + abstractRole, node.loc);
     }
+  }
+
+  accept<T>(visitor: Visitor<T>, node: TSXElement): T {
+    return visitor.validate(node);
   }
 }

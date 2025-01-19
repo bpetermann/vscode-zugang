@@ -2,7 +2,7 @@ import { GENERIC_TEXTS, HREF, LINK, ONCLICK } from '../../utils/constants';
 import { messages } from '../../utils/messages';
 import { Diagnostic } from '../Diagnostic';
 import { TSXElement } from '../Element';
-import { Validator } from './Validator';
+import { Validator, Visitor } from './Validator';
 
 export class LinkValidator implements Validator {
   #tags: string[] = [LINK];
@@ -40,5 +40,9 @@ export class LinkValidator implements Validator {
     ) {
       return new Diagnostic(messages.link.mail, link.loc);
     }
+  }
+
+  accept<T>(visitor: Visitor<T>, node: TSXElement): T {
+    return visitor.validate(node);
   }
 }

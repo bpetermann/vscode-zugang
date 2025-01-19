@@ -92,4 +92,14 @@ export const messages = {
     hidden:
       '[Zugang] A focusable element, or an element containing focusable children, should not have the aria-hidden attribute. Doing so can lead to accessibility issues, as it hides content from assistive technologies while still being interactive.',
   },
+
+  style: {
+    color:
+      '[Zugang] Insufficient contrast between text color and background color. To meet WCAG accessibility standards, ensure that the contrast ratio is at least 4.5:1 for small text or 3:1 for large text at the AA level. For AAA level compliance, the contrast ratio should be at least 7:1 for small text and 4.5:1 for large text. Consider adjusting the text color or background color to improve readability for users with visual impairments.',
+    font: '[Zugang] Font sizes smaller than 9px may be difficult to read for many users, particularly those with low vision or on high-resolution screens. Ensuring text is at least 9px (0.563em/rem) helps maintain readability and accessibility across diverse displays and user needs.',
+    height:
+      '[Zugang] The line height should be at least 1.5 times the font size to ensure sufficient spacing between lines, improving readability and reducing eye strain, especially for users with visual or cognitive disabilities.',
+    family:
+      '[Zugang] The selected font is overly decorative and may reduce readability. Consider using more accessible fonts such as Arial, Verdana, or other sans-serif families. Font family: ',
+  },
 };
