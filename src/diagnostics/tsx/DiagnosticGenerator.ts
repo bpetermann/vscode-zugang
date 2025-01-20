@@ -2,11 +2,11 @@ import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
 import * as jsx from '@babel/types';
 import * as vscode from 'vscode';
-import { Diagnostic } from './Diagnostic';
 import { TSXElement } from './Element';
 import {
   ButtonValidator,
   DivValidator,
+  HeadingValidator,
   ImageValidator,
   LinkValidator,
   StyleValidator,
@@ -19,11 +19,13 @@ export class TSXDiagnosticGenerator {
   constructor(
     private text: string,
     private styleValidator = new StyleValidator(),
+    private elements: string[] = [],
     private validators: Validator[] = [
       new ButtonValidator(),
       new ImageValidator(),
       new DivValidator(),
       new LinkValidator(),
+      new HeadingValidator(),
     ]
   ) {}
 
@@ -60,21 +62,23 @@ export class TSXDiagnosticGenerator {
       return;
     }
 
-    this.diagnostics.push(
-      ...this.collectDiagnostics(element, validator).map(
-        ({ diagnostic }) => diagnostic
-      )
-    );
+    const allDiagnostics = this.collectDiagnostics(element, validator);
+
+    this.diagnostics.push(...allDiagnostics);
+
+    this.elements.push(element.name);
   }
 
   private collectDiagnostics(
     element: TSXElement,
     validator: Validator
-  ): Diagnostic[] {
+  ): vscode.Diagnostic[] {
     return [
       ...validator.accept(this.styleValidator, element),
-      ...validator.validate(element),
-    ];
+      ...(validator instanceof HeadingValidator
+        ? validator.validate(element, this.elements)
+        : validator.validate(element)),
+    ].map(({ diagnostic }) => diagnostic);
   }
 
   private findValidator(name: string): Validator | undefined {
