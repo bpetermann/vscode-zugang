@@ -56,6 +56,7 @@ export const LEGEND = 'legend' as const;
 export const MAIN = 'main' as const;
 export const FONT_SIZE = 'font-size' as const;
 export const FONT_FAMILY = 'font-family' as const;
+export const LINE_HEIGHT = 'line-height' as const;
 
 // BOOLEAN
 export const TRUE = 'true' as const;
