@@ -45,13 +45,14 @@ suite('Style Test Suite', () => {
   });
 
   test('Element wit problematic font family', async () => {
+    const family = 'Chiller';
     const div = new Element('div', {
-      style: 'font-family: Chiller;',
+      style: `font-family: ${family};`,
     });
 
     const { message } = new StyleValidator().validate([div])?.[0];
 
-    assert.strictEqual(message, messages.style.family);
+    assert.strictEqual(message, messages.style.family + family);
   });
 
   test('Element wit insufficent line-height', async () => {

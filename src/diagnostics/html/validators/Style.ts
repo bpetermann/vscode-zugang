@@ -86,7 +86,7 @@ export class StyleValidator implements Validator {
   ): ValidatorError | undefined {
     if (style[FONT_FAMILY] && Style.isFontProblematic(style[FONT_FAMILY])) {
       return new ValidatorError(
-        messages.style.family,
+        messages.style.family + style[FONT_FAMILY],
         element,
         DiagnosticSeverity.Hint
       );
