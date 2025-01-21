@@ -51,7 +51,7 @@ suite('Style Test Suite', () => {
 
     const { message } = new StyleValidator().validate([div])?.[0];
 
-    assert.strictEqual(message, messages.style.font);
+    assert.strictEqual(message, messages.style.family);
   });
 
   test('Element wit insufficent line-height', async () => {
