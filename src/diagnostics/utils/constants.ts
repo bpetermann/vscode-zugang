@@ -54,6 +54,8 @@ export const META = 'meta' as const;
 export const FIELDSET = 'fieldset' as const;
 export const LEGEND = 'legend' as const;
 export const MAIN = 'main' as const;
+export const FONT_SIZE = 'font-size' as const;
+export const FONT_FAMILY = 'font-family' as const;
 
 // BOOLEAN
 export const TRUE = 'true' as const;
@@ -167,3 +169,20 @@ export const ARIA_TAGS = [
   H6,
   LABEL,
 ];
+
+export const STYLE_TAGS = [
+  DIV,
+  BUTTON,
+  SECTION,
+  PARAGRAPH,
+  HEADER,
+  FOOTER,
+  LINK,
+  NAV,
+  H1,
+  H2,
+  H3,
+  H4,
+  H5,
+  H6,
+] as const;
