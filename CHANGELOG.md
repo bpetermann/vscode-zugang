@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**TSX Validation:**
+
+- Validation of heading elements (e.g., no empty headings, unique `<h1>`).
+
 ## [0.3.0]- 2024-01-21
 
 ### Added

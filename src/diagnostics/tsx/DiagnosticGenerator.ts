@@ -9,6 +9,7 @@ import {
   HeadingValidator,
   ImageValidator,
   LinkValidator,
+  ParagraphValidator,
   StyleValidator,
 } from './validators';
 import { Validator } from './validators/Validator';
@@ -26,6 +27,7 @@ export class TSXDiagnosticGenerator {
       new DivValidator(),
       new LinkValidator(),
       new HeadingValidator(),
+      new ParagraphValidator(),
     ]
   ) {}
 

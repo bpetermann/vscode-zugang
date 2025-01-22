@@ -107,4 +107,7 @@ export const messages = {
     family:
       '[Zugang] The selected font is overly decorative and may reduce readability. Consider using more accessible fonts such as Arial, Verdana, or other sans-serif families. Font family: ',
   },
+  p: {
+    abbr: '[Zugang] If an abbreviation not in common usage is used, include the full term, an explanation, or an <abbr> with a descriptive title to ensure clarity for all users, especially those relying on screen readers. Abbreviation found: ',
+  },
 };
