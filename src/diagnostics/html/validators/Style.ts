@@ -1,43 +1,20 @@
 import { Element } from 'domhandler';
 import { isRatioOk } from 'hue-check';
+import { DiagnosticSeverity } from 'vscode';
 import {
   BG_COLOR,
-  BUTTON,
-  DIV,
-  FOOTER,
-  H1,
-  H2,
-  H3,
-  H4,
-  H5,
-  H6,
-  HEADER,
-  LINK,
-  NAV,
-  PARAGRAPH,
-  SECTION,
+  FONT_FAMILY,
+  FONT_SIZE,
+  LINE_HEIGHT,
+  STYLE_TAGS,
 } from '../../utils/constants';
 import { messages } from '../../utils/messages';
+import { Style } from '../../utils/Style';
 import { HTMLElement } from '../Element';
 import { Validator, ValidatorError } from './Validator';
 
 export class StyleValidator implements Validator {
-  readonly #nodeTags = [
-    DIV,
-    BUTTON,
-    SECTION,
-    PARAGRAPH,
-    HEADER,
-    FOOTER,
-    LINK,
-    NAV,
-    H1,
-    H2,
-    H3,
-    H4,
-    H5,
-    H6,
-  ];
+  readonly #nodeTags = STYLE_TAGS;
 
   get nodeTags() {
     return this.#nodeTags;
@@ -51,26 +28,68 @@ export class StyleValidator implements Validator {
 
       if (Object.keys(style).length) {
         errors.push(this.checkContrast(style, element));
+        errors.push(this.checkFontSize(style, element));
+        errors.push(this.checkLineHeight(style, element));
+        errors.push(this.checkFontFamily(style, element));
       }
     });
 
     return errors.filter((error) => error instanceof ValidatorError);
   }
 
-  checkContrast(
+  private checkContrast(
     style: {
       [k: string]: string;
     },
     element: Element
   ): ValidatorError | undefined {
     if (
-      !style[BG_COLOR] ||
-      !style.color ||
-      isRatioOk(style[BG_COLOR], style.color)
+      style[BG_COLOR] &&
+      style.color &&
+      !isRatioOk(style[BG_COLOR], style.color)
     ) {
-      return;
+      return new ValidatorError(messages.style.color, element);
     }
+  }
 
-    return new ValidatorError(messages.style.color, element);
+  private checkFontSize(
+    style: {
+      [k: string]: string;
+    },
+    element: Element
+  ): ValidatorError | undefined {
+    if (style[FONT_SIZE] && !Style.isFontSizeSufficent(style[FONT_SIZE])) {
+      return new ValidatorError(messages.style.font, element);
+    }
+  }
+
+  private checkLineHeight(
+    style: {
+      [k: string]: string;
+    },
+    element: Element
+  ): ValidatorError | undefined {
+    if (
+      style[FONT_SIZE] &&
+      style[LINE_HEIGHT] &&
+      !Style.isLineHeightSufficient(style[LINE_HEIGHT], style[FONT_SIZE])
+    ) {
+      return new ValidatorError(messages.style.height, element);
+    }
+  }
+
+  private checkFontFamily(
+    style: {
+      [k: string]: string;
+    },
+    element: Element
+  ): ValidatorError | undefined {
+    if (style[FONT_FAMILY] && Style.isFontProblematic(style[FONT_FAMILY])) {
+      return new ValidatorError(
+        messages.style.family + style[FONT_FAMILY],
+        element,
+        DiagnosticSeverity.Hint
+      );
+    }
   }
 }
