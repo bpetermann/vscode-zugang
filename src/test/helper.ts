@@ -35,12 +35,15 @@ export const getTSXDocument = (tsx: string) =>
 
 export const createElement = (
   tag: string,
-  style?: { [k: string]: string | number | boolean }
+  attr?: {
+    style?: { [k: string]: string | number | boolean };
+    text?: string;
+  }
 ) =>
   `<${tag}${
-    style
-      ? ` style={{${Object.entries(style)
+    attr?.style
+      ? ` style={{${Object.entries(attr.style)
           .map(([k, v]) => `${k}: ${typeof v === 'string' ? `"${v}"` : v}`)
           .join(', ')}}}>`
       : '>'
-  }Some text</${tag}>`;
+  }${attr?.text ?? 'Some Text'}</${tag}>`;

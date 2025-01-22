@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { DIV, H1, H2, H3, H4, H5, H6 } from '../../diagnostics/utils/constants';
+import { DIV, H1, H2, H3 } from '../../diagnostics/utils/constants';
 import { messages } from '../../diagnostics/utils/messages';
 import {
   createElement,
@@ -11,15 +11,15 @@ suite('Heading Test Suite', () => {
   const h1 = createElement(H1);
   const h2 = createElement(H2);
   const h3 = createElement(H3);
-  const h4 = createElement(H4);
-  const h5 = createElement(H5);
-  const h6 = createElement(H6);
+
   const div = createElement(DIV);
 
   test('<h1> with insufficient color contrast', async () => {
     const element = createElement(H1, {
-      color: '#fff',
-      backgroundColor: 'white',
+      style: {
+        color: '#fff',
+        backgroundColor: 'white',
+      },
     });
 
     const document = await getDocument(element);
