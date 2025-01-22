@@ -2,6 +2,11 @@ export const messages = {
   heading: {
     shouldExist:
       '[Zugang] Do not skip heading levels. Always start with an <h1> and follow with <h2>, <h3>, and so on.',
+    unique:
+      '[Zugang] Each page should have a single <h1> element that summarizes the content, similar to the purpose of the <title> element. Number of <h1> elements: ',
+    skip: "'[Zugang] Do not skip heading levels. Always start with an <h1> and follow with <h2>, <h3>, and so on.",
+    blank:
+      '[Zugang] Heading elements should not be left blank. Empty headings can cause accessibility issues for screen reader users and lead to confusion by disrupting content structure and navigation.',
   },
   meta: {
     shouldExist:

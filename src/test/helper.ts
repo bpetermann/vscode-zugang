@@ -32,3 +32,15 @@ export const getTSXDocument = (tsx: string) =>
     content: tsx,
     language: 'typescriptreact',
   });
+
+export const createElement = (
+  tag: string,
+  style?: { [k: string]: string | number | boolean }
+) =>
+  `<${tag}${
+    style
+      ? ` style={{${Object.entries(style)
+          .map(([k, v]) => `${k}: ${typeof v === 'string' ? `"${v}"` : v}`)
+          .join(', ')}}}>`
+      : '>'
+  }Some text</${tag}>`;

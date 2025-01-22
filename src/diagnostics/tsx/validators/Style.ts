@@ -1,14 +1,12 @@
-import { SourceLocation } from '@babel/types';
 import { isRatioOk } from 'hue-check';
 import { DiagnosticSeverity } from 'vscode';
 import { messages } from '../../utils/messages';
 import { Style } from '../../utils/Style';
 import { Diagnostic } from '../Diagnostic';
 import { TSXElement } from '../Element';
-import { Visitor } from './Validator';
+import { Location, Visitor } from './Validator';
 
 type StyleValue = string | number | boolean;
-type Location = SourceLocation | null | undefined;
 
 export class StyleValidator implements Visitor<Diagnostic[]> {
   private style: Record<string, StyleValue> = {};
