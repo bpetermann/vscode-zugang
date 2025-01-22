@@ -44,23 +44,6 @@ suite('Heading Test Suite', () => {
     assert.strictEqual(errors.length, 0);
   });
 
-  test('Missing heading', async () => {
-    const elements = `<>${h1}${h3}</>`;
-
-    const document = await getDocument(elements);
-    const { message } = generateDiagnostics(document)?.[0];
-    assert.strictEqual(message, messages.heading.skip);
-  });
-
-  test('Headings in the wrong order', async () => {
-    const elements = `<>${h6}${h5}${h4}${h3}${h2}${h1}</>`;
-
-    const document = await getDocument(elements);
-    const errors = generateDiagnostics(document);
-
-    assert.strictEqual(errors.length, 5);
-  });
-
   test('Empty heading', async () => {
     const elements = `<h1></h1>`;
 

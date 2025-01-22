@@ -1,4 +1,3 @@
-import { DiagnosticSeverity } from 'vscode';
 import { H1, H2, H3, H4, H5, H6 } from '../../utils/constants';
 import { messages } from '../../utils/messages';
 import { Diagnostic } from '../Diagnostic';
@@ -15,7 +14,6 @@ export class HeadingValidator implements Validator {
   validate(node: TSXElement, elements: string[]): Diagnostic[] {
     return [
       this.checkMultipleH1(node, elements),
-      this.checkPrevHeading(node, elements),
       this.checkEmptyHeading(node),
     ].filter((error) => error instanceof Diagnostic);
   }
@@ -26,22 +24,6 @@ export class HeadingValidator implements Validator {
   ): Diagnostic | undefined {
     if (node.name === H1 && elements.includes(H1)) {
       return new Diagnostic(messages.heading.unique, node.loc);
-    }
-  }
-
-  checkPrevHeading(
-    node: TSXElement,
-    elements: string[]
-  ): Diagnostic | undefined {
-    const headingLevel = +(node!.name as string).slice(1);
-    const prevLevel = `h${headingLevel - 1}`;
-
-    if (headingLevel > 1 && !elements.includes(prevLevel)) {
-      return new Diagnostic(
-        messages.heading.skip,
-        node.loc,
-        DiagnosticSeverity.Hint
-      );
     }
   }
 
