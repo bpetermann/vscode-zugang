@@ -8,22 +8,22 @@ import { HTMLNodeAdapter } from './HTMLNodeAdapter';
 import { Diagnostic } from './Diagnostic';
 import NodeOrganizer from './NodeOrganizer';
 import {
-  AriaValidator,
-  AttributesValidator,
   DivValidator,
-  FieldsetValidator,
   HeadingValidator,
-  ImageValidator,
   InputValidator,
   LinkValidator,
-  NavigationValidator,
-  RequiredValidator,
-  SectionValidator,
-  StyleValidator,
-  UniquenessValidator,
   Validator,
 } from './validators';
 import { ButtonValidator } from '../validators/ButtonValidator';
+import { AriaValidator } from '../validators/AriaValidator';
+import { FieldsetValidator } from '../validators/FieldsetValidator';
+import { StyleValidator } from '../validators/StyleValidator';
+import { NavigationValidator } from '../validators/NavigationValidator';
+import { SectionValidator } from '../validators/SectionValidator';
+import { ImageValidator } from '../validators/ImageValidator';
+import { UniquenessValidator } from '../validators/UniquenessValidator';
+import { RequiredValidator } from '../validators/RequiredValidator';
+import { AttributesValidator } from '../validators/AttributesValidator';
 
 export class HTMLDiagnosticGenerator {
   private diagnostics: vscode.Diagnostic[] = [];
@@ -33,22 +33,24 @@ export class HTMLDiagnosticGenerator {
     private document: vscode.TextDocument,
     // Legacy validators using the old Validator interface — being migrated to RuleValidator in issues #05–#08.
     private validators: Validator[] = [
-      new AttributesValidator(),
-      new RequiredValidator(),
-      new UniquenessValidator(),
-      new NavigationValidator(),
       new HeadingValidator(),
       new LinkValidator(),
       new DivValidator(),
       new InputValidator(),
-      new FieldsetValidator(),
-      new ImageValidator(),
-      new SectionValidator(),
-      new AriaValidator(),
-      new StyleValidator(),
     ],
     // Migrated validators using the new RuleValidator interface. Will replace validators[] in issue #09.
-    private ruleValidators: RuleValidator[] = [new ButtonValidator()]
+    private ruleValidators: RuleValidator[] = [
+      new ButtonValidator(),
+      new AriaValidator(),
+      new FieldsetValidator(),
+      new StyleValidator(),
+      new NavigationValidator(),
+      new SectionValidator(),
+      new ImageValidator(),
+      new UniquenessValidator(),
+      new RequiredValidator(),
+      new AttributesValidator(),
+    ]
   ) {}
 
   /**
@@ -82,21 +84,31 @@ export class HTMLDiagnosticGenerator {
   /** New path — runs RuleValidator instances one node at a time via HTMLNodeAdapter. */
   private runRuleValidators(nodeOrganizer: NodeOrganizer) {
     const context: ValidationContext = { seenElements: [] };
+    this.ruleValidators.forEach((v) => v.reset?.());
+
     this.ruleValidators.forEach((validator) => {
       nodeOrganizer.getNodes(validator.tags).forEach((el) => {
         const adapter = new HTMLNodeAdapter(el);
         validator.validate(adapter, context).forEach((violation) => {
-          this.diagnostics.push(this.ruleViolationToDiagnostic(adapter, violation));
+          this.diagnostics.push(this.ruleViolationToDiagnostic(violation, adapter));
         });
+      });
+    });
+
+    this.ruleValidators.forEach((validator) => {
+      validator.finalize?.(context).forEach((violation) => {
+        this.diagnostics.push(this.ruleViolationToDiagnostic(violation));
       });
     });
   }
 
   private ruleViolationToDiagnostic(
-    adapter: HTMLNodeAdapter,
-    { message, severity }: RuleViolation
+    { message, severity, node }: RuleViolation,
+    adapter?: HTMLNodeAdapter
   ): vscode.Diagnostic {
-    const { startIndex, endIndex } = adapter;
+    const target = adapter ?? (node as HTMLNodeAdapter | undefined);
+    const startIndex = target?.startIndex;
+    const endIndex = target?.endIndex;
     const range =
       startIndex !== undefined && endIndex !== undefined
         ? new vscode.Range(

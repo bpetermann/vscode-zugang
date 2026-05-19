@@ -1,4 +1,5 @@
 import { DiagnosticSeverity } from 'vscode';
+import { AccessibilityNode } from '../utils/AccessibilityNode';
 import {
   ARIA_CHECKED,
   ARIA_LABEL,
@@ -12,7 +13,6 @@ import {
   TITLE,
 } from '../utils/constants';
 import { messages } from '../utils/messages';
-import { AccessibilityNode } from '../utils/AccessibilityNode';
 import {
   RuleValidator,
   RuleViolation,
@@ -22,7 +22,10 @@ import {
 export class ButtonValidator implements RuleValidator {
   readonly tags: readonly string[] = [BUTTON];
 
-  validate(node: AccessibilityNode, _context: ValidationContext): RuleViolation[] {
+  validate(
+    node: AccessibilityNode,
+    _context: ValidationContext,
+  ): RuleViolation[] {
     const violations: RuleViolation[] = [];
 
     const tabIndex = node.getAttribute(TABINDEX);
@@ -37,7 +40,10 @@ export class ButtonValidator implements RuleValidator {
       violations.push({ message: messages.button.disabled });
     }
 
-    if (node.getAttribute(ROLE) === SWITCH && !node.hasAttribute(ARIA_CHECKED)) {
+    if (
+      node.getAttribute(ROLE) === SWITCH &&
+      !node.hasAttribute(ARIA_CHECKED)
+    ) {
       violations.push({
         message: messages.button.switch,
         severity: DiagnosticSeverity.Hint,

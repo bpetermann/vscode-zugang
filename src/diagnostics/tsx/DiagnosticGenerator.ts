@@ -41,8 +41,17 @@ export class TSXDiagnosticGenerator {
     try {
       const ast = this.parseText();
 
+      this.ruleValidators.forEach((v) => v.reset?.());
+
       traverse(ast, {
         JSXElement: (path) => this.checkElement(path.node),
+      });
+
+      const context: ValidationContext = { seenElements: this.elements };
+      this.ruleValidators.forEach((validator) => {
+        validator.finalize?.(context).forEach((violation) => {
+          this.diagnostics.push(this.ruleViolationToDiagnostic(violation));
+        });
       });
     } catch (error) {
       console.error('Error parsing code: ', error);
@@ -82,7 +91,7 @@ export class TSXDiagnosticGenerator {
       const adapter = new TSXNodeAdapter(node);
       const context: ValidationContext = { seenElements: this.elements };
       ruleValidator.validate(adapter, context).forEach((violation) => {
-        this.diagnostics.push(this.ruleViolationToDiagnostic(adapter, violation));
+        this.diagnostics.push(this.ruleViolationToDiagnostic(violation, adapter));
       });
     }
 
@@ -108,10 +117,13 @@ export class TSXDiagnosticGenerator {
   }
 
   private ruleViolationToDiagnostic(
-    adapter: TSXNodeAdapter,
-    { message, severity }: RuleViolation
+    { message, severity, node, loc: violationLoc }: RuleViolation,
+    adapter?: TSXNodeAdapter
   ): vscode.Diagnostic {
-    const loc = adapter.loc;
+    const loc =
+      adapter?.loc ??
+      (node as TSXNodeAdapter | undefined)?.loc ??
+      violationLoc;
     const range =
       loc?.start && loc?.end
         ? new vscode.Range(

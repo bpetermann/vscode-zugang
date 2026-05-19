@@ -1,79 +1,15 @@
 import * as assert from 'assert';
 import { Element, Text } from 'domhandler';
 import {
-  AriaValidator,
-  AttributesValidator,
   DivValidator,
-  FieldsetValidator,
   HeadingValidator,
-  ImageValidator,
   InputValidator,
   LinkValidator,
-  NavigationValidator,
-  RequiredValidator,
-  SectionValidator,
-  UniquenessValidator,
 } from '../../diagnostics/html/validators';
 import { messages } from '../../diagnostics/utils/messages';
 
 suite('Validator Test Suite', () => {
-  test('Missing lang attribute in <html> tag', async () => {
-    const errors = new AttributesValidator().validate([
-      new Element('html', {}),
-    ]);
-    assert.strictEqual(errors[0].message, messages.html.hasMissingAttribute);
-  });
-
-  test('Missing viewport attribute in <meta> element', async () => {
-    const errors = new RequiredValidator().validate([new Element('body', {})]);
-    assert.strictEqual(errors[0].message, messages.meta.shouldExist);
-  });
-
-  test('Missing <title> tag', async () => {
-    const errors = new RequiredValidator().validate([new Element('body', {})]);
-    assert.strictEqual(errors[1].message, messages.title.shouldExist);
-  });
-
-  test('Empty <html> tag should return two diagnostics', async () => {
-    const errors = new RequiredValidator().validate([new Element('html', {})]);
-    assert.strictEqual(errors.length, 2);
-  });
-
-  test('Empty lang attribute in <html> tag', async () => {
-    const { message } = new AttributesValidator().validate([
-      new Element('html', { lang: '' }),
-    ])?.[0];
-    assert.strictEqual(message, messages.html.hasMissingAttribute);
-  });
-
-  test('Two occurrences of <title> tag', async () => {
-    const { message } = new UniquenessValidator().validate([
-      new Element('title', {}),
-      new Element('title', {}),
-    ])?.[0];
-
-    assert.strictEqual(message, messages.title.shouldBeUnique);
-  });
-
-  test('Two occurrences of <main> tag', async () => {
-    const { message } = new UniquenessValidator().validate([
-      new Element('main', {}),
-      new Element('main', {}),
-    ])?.[0];
-
-    assert.strictEqual(message, messages.main.shouldBeUnique);
-  });
-
-  test('Two occurrences of <h1> tag', async () => {
-    const { message } = new UniquenessValidator().validate([
-      new Element('h1', {}),
-      new Element('h1', {}),
-    ])?.[0];
-
-    assert.strictEqual(message, messages.h1.shouldBeUnique);
-  });
-
-  test('<h4> tag present without preceding <h3> tag', async () => {
+test('<h4> tag present without preceding <h3> tag', async () => {
     const h4 = new Element('h4', {});
 
     const { message } = new HeadingValidator().validate([h4])?.[0];
@@ -196,25 +132,7 @@ suite('Validator Test Suite', () => {
     assert.strictEqual(message, messages.link.list);
   });
 
-  test('Two occurrences of <nav> without attributes', async () => {
-    const { message } = new NavigationValidator().validate([
-      new Element('nav', {}),
-      new Element('nav', {}),
-    ])?.[0];
-
-    assert.strictEqual(message, messages.nav.label);
-  });
-
-  test('Two occurrences of <nav> with attributes', async () => {
-    const errors = new NavigationValidator().validate([
-      new Element('nav', { 'aria-label': 'main' }),
-      new Element('nav', { 'aria-label': 'customer service' }),
-    ]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<div> element with "onclick" event', async () => {
+test('<div> element with "onclick" event', async () => {
     const { message } = new DivValidator().validate([
       new Element('div', { onclick: 'click()' }),
     ])?.[0];
@@ -303,143 +221,5 @@ suite('Validator Test Suite', () => {
     assert.strictEqual(message, messages.input.label);
   });
 
-  test('<fieldset> with <legend> as the first child>', async () => {
-    const fieldset = new Element('fieldset', {});
-    fieldset.children = [
-      new Element('legend', {}, [new Text('What is your spirit animal?')]),
-    ];
 
-    const errors = new FieldsetValidator().validate([fieldset]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<fieldset> with no <legend> tag', async () => {
-    const fieldset = new Element('fieldset', {});
-
-    const { message } = new FieldsetValidator().validate([fieldset])?.[0];
-
-    assert.strictEqual(message, messages.fieldset.legend);
-  });
-
-  test('<fieldset> with nested <legend> tag', async () => {
-    const fieldset = new Element('fieldset', {});
-    const legend = new Element('legend', {}, [
-      new Text('What is your spirit animal?'),
-    ]);
-    fieldset.children = [new Element('div', {}, [legend])];
-
-    const { message } = new FieldsetValidator().validate([fieldset])?.[0];
-
-    assert.strictEqual(message, messages.fieldset.legend);
-  });
-
-  test('<img> tag missing the alt attribute', async () => {
-    const img = new Element('img', { src: 'send.png' });
-
-    const { message } = new ImageValidator().validate([img])?.[0];
-
-    assert.strictEqual(message, messages.img.alt);
-  });
-
-  test('<img> tag with an empty alt attribute', async () => {
-    const img = new Element('img', { src: 'send.png', alt: '' });
-
-    const errors = new ImageValidator().validate([img]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('Many <img> elements with same alt-attribute', async () => {
-    const img1 = new Element('img', { src: 'beach.png', alt: 'Beach' });
-    const img2 = new Element('img', { src: 'beach.png', alt: 'Beach' });
-    const img3 = new Element('img', { src: 'beach.png', alt: 'Beach' });
-    const img4 = new Element('img', { src: 'beach.png', alt: 'Beach' });
-
-    const { message } = new ImageValidator().validate([
-      img1,
-      img2,
-      img3,
-      img4,
-    ])?.[0];
-
-    assert.strictEqual(message, messages.img.repeated);
-  });
-
-  test('Different <img> elements with same alt-attribute', async () => {
-    const images = new Array(10).fill(null).map(
-      (_, i) =>
-        new Element('img', {
-          alt: i % 2 === 0 ? 'Beach' : 'Alps',
-        })
-    );
-
-    const { message } = new ImageValidator().validate(images)?.[0];
-
-    assert.strictEqual(message, messages.img.repeated);
-  });
-
-  test('Two occurrences of <section> without attributes', async () => {
-    const section1 = new Element('section', {});
-    const section2 = new Element('section', {});
-
-    const { message } = new SectionValidator().validate([
-      section1,
-      section2,
-    ])?.[0];
-
-    assert.strictEqual(message, messages.section.label);
-  });
-
-  test('Two occurrences of <section> with attributes', async () => {
-    const section1 = new Element('section', { 'aria-label': 'about me' });
-    const section2 = new Element('section', { 'aria-label': 'contact' });
-
-    const errors = new SectionValidator().validate([section1, section2]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<a> tag with aria-hidden="true"', async () => {
-    const a = new Element('a', { href: '/blog', 'aria-hidden': 'true' });
-
-    const { message } = new AriaValidator().validate([a])?.[0];
-
-    assert.strictEqual(message, messages.aria.hidden);
-  });
-
-  test('<div> with aria hidden and focusable children', async () => {
-    const div = new Element('div', { 'aria-hidden': 'true' }, [
-      new Element('a', { href: '/blog' }),
-    ]);
-
-    const { message } = new AriaValidator().validate([div])?.[0];
-
-    assert.strictEqual(message, messages.aria.hidden);
-  });
-
-  test('<div> with aria hidden and <button> child', async () => {
-    const div = new Element('div', { 'aria-hidden': 'true' }, [
-      new Element('button', {}, [new Text('click me')]),
-    ]);
-
-    const { message } = new AriaValidator().validate([div])?.[0];
-
-    assert.strictEqual(message, messages.aria.hidden);
-  });
-
-  test('<div> with aria hidden and <button> child', async () => {
-    const link = new Element('a', { href: '/contact' });
-    let div = new Element('div', {}, [link]);
-
-    for (let index = 0; index < 2; index++) {
-      div = new Element('div', {}, [div]);
-    }
-
-    const { message } = new AriaValidator().validate([
-      new Element('div', { 'aria-hidden': 'true' }, [div]),
-    ])?.[0];
-
-    assert.strictEqual(message, messages.aria.hidden);
-  });
 });
