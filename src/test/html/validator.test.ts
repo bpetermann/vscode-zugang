@@ -3,7 +3,6 @@ import { Element, Text } from 'domhandler';
 import {
   AriaValidator,
   AttributesValidator,
-  ButtonValidator,
   DivValidator,
   FieldsetValidator,
   HeadingValidator,
@@ -263,85 +262,6 @@ suite('Validator Test Suite', () => {
   test('A valid <div> element', async () => {
     const errors = new DivValidator().validate([new Element('div', {})]);
     assert.strictEqual(errors.length, 0);
-  });
-
-  test('<button> with role="switch" but missing aria-checked', async () => {
-    const button = new Element('button', { role: 'switch' });
-    const { message } = new ButtonValidator().validate([button])?.[0];
-
-    assert.strictEqual(message, messages.button.switch);
-  });
-
-  test('<button> with disabled role', async () => {
-    const button = new Element('button', { disabled: 'true' });
-    const { message } = new ButtonValidator().validate([button])?.[0];
-
-    assert.strictEqual(message, messages.button.disabled);
-  });
-
-  test('<button> with "tabindex" greater than zero', async () => {
-    const button = new Element('button', { tabindex: '2' });
-    const { message } = new ButtonValidator().validate([button])?.[0];
-
-    assert.strictEqual(message, messages.button.tabindex);
-  });
-
-  test('<button> with no text content', async () => {
-    const button = new Element('button', {});
-    const { message } = new ButtonValidator().validate([button])?.[0];
-
-    assert.strictEqual(message, messages.button.text);
-  });
-
-  test('<button> with no text but <img> as child', async () => {
-    const img = new Element('img', { src: '/sunrise.png', alt: 'sunrise' });
-    const button = new Element('button', {}, [img]);
-    const errors = new ButtonValidator().validate([button]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<button> with no text but "aria-label"', async () => {
-    const button = new Element('button', { 'aria-label': 'product count' }, []);
-    const errors = new ButtonValidator().validate([button]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<button> with no text but "aria-labelledby"', async () => {
-    const button = new Element(
-      'button',
-      { 'aria-labelledby': 'submit-heading' },
-      []
-    );
-    const errors = new ButtonValidator().validate([button]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<button> with no text but "title"', async () => {
-    const button = new Element('button', { title: 'submit form' }, []);
-    const errors = new ButtonValidator().validate([button]);
-
-    assert.strictEqual(errors.length, 0);
-  });
-
-  test('<button> with abstract role "command"', async () => {
-    const button = new Element('button', { role: 'command' }, [
-      new Text('command'),
-    ]);
-    const { message } = new ButtonValidator().validate([button])?.[0];
-
-    assert.strictEqual(message, messages.button.abstract);
-  });
-
-  test('<button> with abstract role "widget"', async () => {
-    const button = new Element('button', { role: 'widget' }, [
-      new Text('command'),
-    ]);
-    const { message } = new ButtonValidator().validate([button])?.[0];
-
-    assert.strictEqual(message, messages.button.abstract);
   });
 
   test('<input> field nested inside a <label> element', async () => {

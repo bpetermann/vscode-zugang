@@ -1,13 +1,15 @@
 import { Document } from 'domhandler';
 import { DomUtils, parseDocument } from 'htmlparser2';
 import * as vscode from 'vscode';
+import { DiagnosticSeverity } from 'vscode';
 import { TAG } from '../utils/constants';
+import { RuleValidator, RuleViolation, ValidationContext } from '../utils/RuleValidator';
+import { HTMLNodeAdapter } from './HTMLNodeAdapter';
 import { Diagnostic } from './Diagnostic';
 import NodeOrganizer from './NodeOrganizer';
 import {
   AriaValidator,
   AttributesValidator,
-  ButtonValidator,
   DivValidator,
   FieldsetValidator,
   HeadingValidator,
@@ -21,6 +23,7 @@ import {
   UniquenessValidator,
   Validator,
 } from './validators';
+import { ButtonValidator } from '../validators/ButtonValidator';
 
 export class HTMLDiagnosticGenerator {
   private diagnostics: vscode.Diagnostic[] = [];
@@ -28,6 +31,7 @@ export class HTMLDiagnosticGenerator {
   constructor(
     private htmlContent: string,
     private document: vscode.TextDocument,
+    // Legacy validators using the old Validator interface — being migrated to RuleValidator in issues #05–#08.
     private validators: Validator[] = [
       new AttributesValidator(),
       new RequiredValidator(),
@@ -36,14 +40,15 @@ export class HTMLDiagnosticGenerator {
       new HeadingValidator(),
       new LinkValidator(),
       new DivValidator(),
-      new ButtonValidator(),
       new InputValidator(),
       new FieldsetValidator(),
       new ImageValidator(),
       new SectionValidator(),
       new AriaValidator(),
       new StyleValidator(),
-    ]
+    ],
+    // Migrated validators using the new RuleValidator interface. Will replace validators[] in issue #09.
+    private ruleValidators: RuleValidator[] = [new ButtonValidator()]
   ) {}
 
   /**
@@ -54,6 +59,7 @@ export class HTMLDiagnosticGenerator {
       const parsedHtml = this.parseHtmlDocument();
       const nodeOrganizer = this.organizeNodes(parsedHtml);
       this.runValidators(nodeOrganizer);
+      this.runRuleValidators(nodeOrganizer);
     } catch (error) {
       console.error('Error parsing HTML: ', error);
     }
@@ -61,9 +67,7 @@ export class HTMLDiagnosticGenerator {
     return this.diagnostics;
   }
 
-  /**
-   * Runs the validators against the organized nodes and collects diagnostics.
-   */
+  /** Legacy path — runs old-interface validators node-list-at-a-time. Removed in issue #09. */
   private runValidators(nodeOrganizer: NodeOrganizer) {
     this.validators.forEach((validator) => {
       const nodes = nodeOrganizer.getNodes(validator.nodeTags);
@@ -73,6 +77,34 @@ export class HTMLDiagnosticGenerator {
         this.diagnostics.push(diagnostic);
       });
     });
+  }
+
+  /** New path — runs RuleValidator instances one node at a time via HTMLNodeAdapter. */
+  private runRuleValidators(nodeOrganizer: NodeOrganizer) {
+    const context: ValidationContext = { seenElements: [] };
+    this.ruleValidators.forEach((validator) => {
+      nodeOrganizer.getNodes(validator.tags).forEach((el) => {
+        const adapter = new HTMLNodeAdapter(el);
+        validator.validate(adapter, context).forEach((violation) => {
+          this.diagnostics.push(this.ruleViolationToDiagnostic(adapter, violation));
+        });
+      });
+    });
+  }
+
+  private ruleViolationToDiagnostic(
+    adapter: HTMLNodeAdapter,
+    { message, severity }: RuleViolation
+  ): vscode.Diagnostic {
+    const { startIndex, endIndex } = adapter;
+    const range =
+      startIndex !== undefined && endIndex !== undefined
+        ? new vscode.Range(
+            this.document.positionAt(startIndex),
+            this.document.positionAt(endIndex)
+          )
+        : new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+    return new vscode.Diagnostic(range, message, severity ?? DiagnosticSeverity.Warning);
   }
 
   /**
