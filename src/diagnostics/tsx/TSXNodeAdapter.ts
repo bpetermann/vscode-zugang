@@ -24,6 +24,7 @@ import {
   TRUE,
   VALUE,
   EXPRESSION,
+  JSX_FRAGMENT,
 } from '../utils/constants';
 import { AccessibilityNode, NodeLocation } from '../utils/AccessibilityNode';
 
@@ -123,6 +124,21 @@ export class TSXNodeAdapter implements AccessibilityNode {
     return this.node.children
       .filter((c) => c.type === JSX_ELEMENT)
       .map((c) => new TSXNodeAdapter(c as jsx.JSXElement));
+  }
+
+  /** TSX adapter does not track parent — Babel traversal carries it separately. */
+  get parent(): undefined {
+    return undefined;
+  }
+
+  /** TSX adapter does not track siblings. */
+  get previousElementSibling(): undefined {
+    return undefined;
+  }
+
+  /** TSX adapter does not track siblings. */
+  get nextElementSibling(): undefined {
+    return undefined;
   }
 
   /**
@@ -243,6 +259,23 @@ export class TSXNodeAdapter implements AccessibilityNode {
     if (!this.isNotFocusable()) {
       return false;
     }
-    return this.children.every((child) => child.canHaveAriaHidden());
+    return this.flattenedDescendantElements(this.node).every((child) =>
+      new TSXNodeAdapter(child).canHaveAriaHidden()
+    );
+  }
+
+  /** Flattens direct JSXElement descendants, traversing through JSXFragment children. */
+  private flattenedDescendantElements(
+    element: jsx.JSXElement | jsx.JSXFragment
+  ): jsx.JSXElement[] {
+    return element.children.flatMap((child) => {
+      if (child.type === JSX_ELEMENT) {
+        return [child];
+      }
+      if (child.type === JSX_FRAGMENT) {
+        return this.flattenedDescendantElements(child);
+      }
+      return [];
+    });
   }
 }

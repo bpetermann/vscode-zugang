@@ -12,4 +12,3 @@ export { RequiredValidator } from './Required';
 export { SectionValidator } from './Section';
 export { StyleValidator } from './Style';
 export { UniquenessValidator } from './Uniqueness';
-export { Validator } from './Validator';

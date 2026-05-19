@@ -68,6 +68,30 @@ export class HTMLNodeAdapter implements AccessibilityNode {
       .map((c) => new HTMLNodeAdapter(c as Element));
   }
 
+  /** Parent element if this element has one (skipping the Document root). */
+  get parent(): AccessibilityNode | undefined {
+    const p = this.element.parent;
+    return p instanceof Element ? new HTMLNodeAdapter(p) : undefined;
+  }
+
+  /** Previous sibling element (skips text nodes), if any. */
+  get previousElementSibling(): AccessibilityNode | undefined {
+    let prev = this.element.prev;
+    while (prev && !(prev instanceof Element)) {
+      prev = prev.prev;
+    }
+    return prev instanceof Element ? new HTMLNodeAdapter(prev) : undefined;
+  }
+
+  /** Next sibling element (skips text nodes), if any. */
+  get nextElementSibling(): AccessibilityNode | undefined {
+    let next = this.element.next;
+    while (next && !(next instanceof Element)) {
+      next = next.next;
+    }
+    return next instanceof Element ? new HTMLNodeAdapter(next) : undefined;
+  }
+
   /** Returns the value of the named attribute, or `undefined` if absent. */
   getAttribute(name: string): string | undefined {
     return this.element.attribs?.[name];

@@ -7,12 +7,12 @@ import { RuleValidator, RuleViolation, ValidationContext } from '../utils/RuleVa
 import { TSXNodeAdapter } from './TSXNodeAdapter';
 import { TSXElement } from './Element';
 import {
-  DivValidator,
   HeadingValidator,
-  ImageValidator,
-  LinkValidator,
   StyleValidator,
 } from './validators';
+import { ImageValidator } from './validators/Image';
+import { LinkValidator } from './validators/Link';
+import { DivValidator } from './validators/Div';
 import { Validator } from './validators/Validator';
 import { ButtonValidator } from '../validators/ButtonValidator';
 
@@ -25,13 +25,15 @@ export class TSXDiagnosticGenerator {
     private elements: string[] = [],
     // Legacy validators using the old Validator interface — being migrated to RuleValidator in issues #05–#08.
     private validators: Validator[] = [
-      new ImageValidator(),
-      new DivValidator(),
-      new LinkValidator(),
       new HeadingValidator(),
     ],
     // Migrated validators using the new RuleValidator interface. Will replace validators[] in issue #09.
-    private ruleValidators: RuleValidator[] = [new ButtonValidator()]
+    private ruleValidators: RuleValidator[] = [
+      new ButtonValidator(),
+      new ImageValidator(),
+      new LinkValidator(),
+      new DivValidator(),
+    ]
   ) {}
 
   /**
@@ -84,10 +86,13 @@ export class TSXDiagnosticGenerator {
       tags.includes(element.name!)
     );
     if (ruleValidator) {
-      // Style checks are not yet migrated to RuleValidator — bridge via direct call until issue #09.
-      this.styleValidator.validate(element).forEach(({ diagnostic }) => {
-        this.diagnostics.push(diagnostic);
-      });
+      // Style checks not yet migrated to RuleValidator — bridge via direct call until issue #08/#09.
+      // img is exempt to match the legacy validateImage() no-op behavior from the Visitor pattern.
+      if (element.name !== 'img') {
+        this.styleValidator.validate(element).forEach(({ diagnostic }) => {
+          this.diagnostics.push(diagnostic);
+        });
+      }
       const adapter = new TSXNodeAdapter(node);
       const context: ValidationContext = { seenElements: this.elements };
       ruleValidator.validate(adapter, context).forEach((violation) => {

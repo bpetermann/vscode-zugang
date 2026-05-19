@@ -1,48 +1,32 @@
 import { GENERIC_TEXTS, HREF, LINK, ONCLICK } from '../../utils/constants';
 import { messages } from '../../utils/messages';
-import { Diagnostic } from '../Diagnostic';
-import { TSXElement } from '../Element';
-import { Validator, Visitor } from './Validator';
+import { AccessibilityNode } from '../../utils/AccessibilityNode';
+import {
+  RuleValidator,
+  RuleViolation,
+  ValidationContext,
+} from '../../utils/RuleValidator';
 
-export class LinkValidator implements Validator {
-  #tags: string[] = [LINK];
+export class LinkValidator implements RuleValidator {
+  readonly tags: readonly string[] = [LINK];
 
-  get tags() {
-    return this.#tags;
-  }
+  validate(node: AccessibilityNode, _context: ValidationContext): RuleViolation[] {
+    const violations: RuleViolation[] = [];
+    const text = node.text;
 
-  validate(node: TSXElement): Diagnostic[] {
-    return [
-      this.checkGenericText(node),
-      this.checkWrongAttributes(node),
-      this.checkMailToLinks(node),
-    ].filter((error) => error instanceof Diagnostic);
-  }
-
-  checkGenericText(link: TSXElement): Diagnostic | undefined {
-    if (GENERIC_TEXTS.includes(link.text.trim().toLowerCase())) {
-      return new Diagnostic(messages.link.generic + link.text, link.loc);
+    if (text && GENERIC_TEXTS.includes(text.trim().toLowerCase())) {
+      violations.push({ message: messages.link.generic + text });
     }
-  }
 
-  checkWrongAttributes(link: TSXElement): Diagnostic | undefined {
-    if (link.getAttributes().includes(ONCLICK)) {
-      return new Diagnostic(messages.link.onclick, link.loc);
+    if (node.hasAttribute(ONCLICK)) {
+      violations.push({ message: messages.link.onclick });
     }
-  }
 
-  private checkMailToLinks(link: TSXElement): Diagnostic | undefined {
-    const urlFragment = link.getAttribute(HREF);
-    if (
-      urlFragment &&
-      urlFragment.startsWith('mailto:') &&
-      !link.text?.includes('@')
-    ) {
-      return new Diagnostic(messages.link.mail, link.loc);
+    const href = node.getAttribute(HREF);
+    if (href?.startsWith('mailto:') && !text?.includes('@')) {
+      violations.push({ message: messages.link.mail });
     }
-  }
 
-  accept<T>(visitor: Visitor<T>, node: TSXElement): T {
-    return visitor.validate(node);
+    return violations;
   }
 }

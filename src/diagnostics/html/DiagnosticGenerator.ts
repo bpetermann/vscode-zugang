@@ -5,15 +5,7 @@ import { DiagnosticSeverity } from 'vscode';
 import { TAG } from '../utils/constants';
 import { RuleValidator, RuleViolation, ValidationContext } from '../utils/RuleValidator';
 import { HTMLNodeAdapter } from './HTMLNodeAdapter';
-import { Diagnostic } from './Diagnostic';
 import NodeOrganizer from './NodeOrganizer';
-import {
-  DivValidator,
-  HeadingValidator,
-  InputValidator,
-  LinkValidator,
-  Validator,
-} from './validators';
 import { ButtonValidator } from '../validators/ButtonValidator';
 import { AriaValidator } from '../validators/AriaValidator';
 import { FieldsetValidator } from '../validators/FieldsetValidator';
@@ -24,6 +16,10 @@ import { ImageValidator } from '../validators/ImageValidator';
 import { UniquenessValidator } from '../validators/UniquenessValidator';
 import { RequiredValidator } from '../validators/RequiredValidator';
 import { AttributesValidator } from '../validators/AttributesValidator';
+import { DivValidator } from '../validators/DivValidator';
+import { InputValidator } from '../validators/InputValidator';
+import { LinkValidator } from '../validators/LinkValidator';
+import { HeadingValidator } from '../validators/HeadingValidator';
 
 export class HTMLDiagnosticGenerator {
   private diagnostics: vscode.Diagnostic[] = [];
@@ -31,14 +27,6 @@ export class HTMLDiagnosticGenerator {
   constructor(
     private htmlContent: string,
     private document: vscode.TextDocument,
-    // Legacy validators using the old Validator interface — being migrated to RuleValidator in issues #05–#08.
-    private validators: Validator[] = [
-      new HeadingValidator(),
-      new LinkValidator(),
-      new DivValidator(),
-      new InputValidator(),
-    ],
-    // Migrated validators using the new RuleValidator interface. Will replace validators[] in issue #09.
     private ruleValidators: RuleValidator[] = [
       new ButtonValidator(),
       new AriaValidator(),
@@ -50,6 +38,10 @@ export class HTMLDiagnosticGenerator {
       new UniquenessValidator(),
       new RequiredValidator(),
       new AttributesValidator(),
+      new DivValidator(),
+      new InputValidator(),
+      new LinkValidator(),
+      new HeadingValidator(),
     ]
   ) {}
 
@@ -60,7 +52,6 @@ export class HTMLDiagnosticGenerator {
     try {
       const parsedHtml = this.parseHtmlDocument();
       const nodeOrganizer = this.organizeNodes(parsedHtml);
-      this.runValidators(nodeOrganizer);
       this.runRuleValidators(nodeOrganizer);
     } catch (error) {
       console.error('Error parsing HTML: ', error);
@@ -69,19 +60,6 @@ export class HTMLDiagnosticGenerator {
     return this.diagnostics;
   }
 
-  /** Legacy path — runs old-interface validators node-list-at-a-time. Removed in issue #09. */
-  private runValidators(nodeOrganizer: NodeOrganizer) {
-    this.validators.forEach((validator) => {
-      const nodes = nodeOrganizer.getNodes(validator.nodeTags);
-
-      validator.validate(nodes).forEach((error) => {
-        const { diagnostic } = new Diagnostic(this.document, error);
-        this.diagnostics.push(diagnostic);
-      });
-    });
-  }
-
-  /** New path — runs RuleValidator instances one node at a time via HTMLNodeAdapter. */
   private runRuleValidators(nodeOrganizer: NodeOrganizer) {
     const context: ValidationContext = { seenElements: [] };
     this.ruleValidators.forEach((v) => v.reset?.());

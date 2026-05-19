@@ -27,6 +27,9 @@ export class FakeNode implements AccessibilityNode {
   endIndex: number | undefined = undefined;
   style: Record<string, string | number | boolean> = {};
   children: FakeNode[] = [];
+  parent: FakeNode | undefined = undefined;
+  previousElementSibling: FakeNode | undefined = undefined;
+  nextElementSibling: FakeNode | undefined = undefined;
   private attribs: Record<string, string>;
 
   constructor(
