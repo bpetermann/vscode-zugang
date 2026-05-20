@@ -2,7 +2,9 @@ import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
 import * as jsx from '@babel/types';
 import * as vscode from 'vscode';
-import { DiagnosticSeverity } from 'vscode';
+import { buildDiagnostic } from '../utils/Diagnostic';
+import { ParseError } from '../utils/ParseError';
+import { PositionResolver, ZERO_RANGE } from '../utils/PositionResolver';
 import {
   RuleValidator,
   RuleViolation,
@@ -17,9 +19,36 @@ import { DivValidator } from './validators/Div';
 import { ImageValidator } from './validators/Image';
 import { LinkValidator } from './validators/Link';
 
-export class TSXDiagnosticGenerator {
-  private diagnostics: vscode.Diagnostic[] = [];
+export interface TSXParsedDocument {
+  ast: jsx.File;
+}
 
+class TSXPositionResolver implements PositionResolver {
+  resolve({ node, loc: violationLoc }: RuleViolation): vscode.Range {
+    const loc = (node as TSXNodeAdapter | undefined)?.loc ?? violationLoc;
+    if (loc?.start && loc?.end) {
+      return new vscode.Range(
+        new vscode.Position(loc.start.line - 1, loc.start.column),
+        new vscode.Position(loc.end.line - 1, loc.end.column),
+      );
+    }
+    return ZERO_RANGE;
+  }
+}
+
+const defaultTSXParser = (text: string): TSXParsedDocument => {
+  try {
+    const ast = parser.parse(text, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+    return { ast };
+  } catch (error) {
+    throw new ParseError('Failed to parse TSX', { cause: error });
+  }
+};
+
+export class TSXDiagnosticGenerator {
   constructor(
     private text: string,
     private ruleValidators: RuleValidator[] = [
@@ -31,94 +60,80 @@ export class TSXDiagnosticGenerator {
       new UniquenessValidator(),
       new StyleValidator(),
     ],
+    private parser: (text: string) => TSXParsedDocument = defaultTSXParser,
   ) {}
 
   /**
-   * Generates diagnostics for the TSX code.
+   * Stage 1 — parse the input text into a typed document via the injected
+   * parser. Throws {@link ParseError} when parsing fails.
+   */
+  public parse(text: string): TSXParsedDocument {
+    return this.parser(text);
+  }
+
+  /**
+   * Stage 2 — drive every RuleValidator across the parsed document and return
+   * the collected violations. Pure function of `doc` + the validators array;
+   * no parser involvement, no VS Code dependency.
+   */
+  public validate(doc: TSXParsedDocument): RuleViolation[] {
+    const violations: RuleViolation[] = [];
+    const context: ValidationContext = { seenElements: [] };
+
+    this.ruleValidators.forEach((v) => v.reset?.());
+
+    traverse(doc.ast, {
+      JSXElement: (path) => {
+        const adapter = new TSXNodeAdapter(path.node);
+        const name = adapter.name;
+        if (!name) {
+          return;
+        }
+        const matching = this.ruleValidators.filter(({ tags }) =>
+          tags.includes(name),
+        );
+        if (matching.length === 0) {
+          return;
+        }
+        matching.forEach((validator) => {
+          validator.validate(adapter, context).forEach((violation) => {
+            violations.push(
+              violation.node ? violation : { ...violation, node: adapter },
+            );
+          });
+        });
+        context.seenElements.push(name);
+      },
+    });
+
+    this.ruleValidators.forEach((validator) => {
+      validator.finalize?.(context).forEach((violation) => {
+        violations.push(violation);
+      });
+    });
+
+    return violations;
+  }
+
+  /**
+   * Stage 3 — map a prebuilt RuleViolation[] to vscode.Diagnostic[] using the
+   * TSX-specific PositionResolver. `_doc` is accepted for symmetry with the
+   * HTML pipeline; TSX position math reads from the violation's attached node.
+   */
+  public diagnose(
+    violations: RuleViolation[],
+    _doc?: TSXParsedDocument,
+  ): vscode.Diagnostic[] {
+    const resolver = new TSXPositionResolver();
+    return violations.map((v) => buildDiagnostic(v, resolver.resolve(v)));
+  }
+
+  /**
+   * Public entry point — parse, validate, diagnose. Surfaces ParseError.
    */
   public generateDiagnostics(): vscode.Diagnostic[] {
-    try {
-      const ast = this.parseText();
-      const seenElements: string[] = [];
-      const context: ValidationContext = { seenElements };
-
-      this.ruleValidators.forEach((v) => v.reset?.());
-
-      traverse(ast, {
-        JSXElement: (path) => this.checkElement(path.node, context),
-      });
-
-      this.ruleValidators.forEach((validator) => {
-        validator.finalize?.(context).forEach((violation) => {
-          this.diagnostics.push(this.ruleViolationToDiagnostic(violation));
-        });
-      });
-    } catch (error) {
-      console.error('Error parsing code: ', error);
-    }
-
-    return this.diagnostics;
-  }
-
-  /**
-   * Checks a JSX element and adds diagnostics if issues are found.
-   */
-  private checkElement(node: jsx.JSXElement, context: ValidationContext): void {
-    const adapter = new TSXNodeAdapter(node);
-    const name = adapter.name;
-
-    if (!name) {
-      return;
-    }
-
-    const matching = this.ruleValidators.filter(({ tags }) =>
-      tags.includes(name),
-    );
-    if (matching.length === 0) {
-      return;
-    }
-
-    matching.forEach((ruleValidator) => {
-      ruleValidator.validate(adapter, context).forEach((violation) => {
-        this.diagnostics.push(
-          this.ruleViolationToDiagnostic(violation, adapter),
-        );
-      });
-    });
-
-    context.seenElements.push(name);
-  }
-
-  private ruleViolationToDiagnostic(
-    { message, severity, node, loc: violationLoc }: RuleViolation,
-    adapter?: TSXNodeAdapter,
-  ): vscode.Diagnostic {
-    const loc =
-      adapter?.loc ?? (node as TSXNodeAdapter | undefined)?.loc ?? violationLoc;
-    const range =
-      loc?.start && loc?.end
-        ? new vscode.Range(
-            new vscode.Position(loc.start.line - 1, loc.start.column),
-            new vscode.Position(loc.end.line - 1, loc.end.column),
-          )
-        : new vscode.Range(
-            new vscode.Position(0, 0),
-            new vscode.Position(0, 0),
-          );
-    return new vscode.Diagnostic(
-      range,
-      message,
-      severity ?? DiagnosticSeverity.Warning,
-    );
-  }
-
-  /**
-   * Parse the provided code as an entire program.
-   */
-  private parseText() {
-    return parser.parse(this.text, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
+    const doc = this.parse(this.text);
+    const violations = this.validate(doc);
+    return this.diagnose(violations, doc);
   }
 }

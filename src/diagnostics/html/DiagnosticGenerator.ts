@@ -1,8 +1,10 @@
 import { Document } from 'domhandler';
 import { DomUtils, parseDocument } from 'htmlparser2';
 import * as vscode from 'vscode';
-import { DiagnosticSeverity } from 'vscode';
 import { TAG } from '../utils/constants';
+import { buildDiagnostic } from '../utils/Diagnostic';
+import { ParseError } from '../utils/ParseError';
+import { PositionResolver, ZERO_RANGE } from '../utils/PositionResolver';
 import { RuleValidator, RuleViolation, ValidationContext } from '../utils/RuleValidator';
 import { HTMLNodeAdapter } from './HTMLNodeAdapter';
 import NodeOrganizer from './NodeOrganizer';
@@ -21,9 +23,41 @@ import { InputValidator } from '../validators/InputValidator';
 import { LinkValidator } from '../validators/LinkValidator';
 import { HeadingValidator } from '../validators/HeadingValidator';
 
-export class HTMLDiagnosticGenerator {
-  private diagnostics: vscode.Diagnostic[] = [];
+export interface HTMLParsedDocument {
+  tree: Document;
+  organizer: NodeOrganizer;
+}
 
+class HTMLPositionResolver implements PositionResolver {
+  constructor(private document: vscode.TextDocument) {}
+  resolve({ node }: RuleViolation): vscode.Range {
+    const adapter = node as HTMLNodeAdapter | undefined;
+    const startIndex = adapter?.startIndex;
+    const endIndex = adapter?.endIndex;
+    if (startIndex !== undefined && endIndex !== undefined) {
+      return new vscode.Range(
+        this.document.positionAt(startIndex),
+        this.document.positionAt(endIndex)
+      );
+    }
+    return ZERO_RANGE;
+  }
+}
+
+const defaultHTMLParser = (text: string): HTMLParsedDocument => {
+  try {
+    const tree = parseDocument(text, {
+      withStartIndices: true,
+      withEndIndices: true,
+    });
+    const tagNodes = DomUtils.filter((node) => node.type === TAG, tree.children);
+    return { tree, organizer: new NodeOrganizer(tagNodes) };
+  } catch (error) {
+    throw new ParseError('Failed to parse HTML', { cause: error });
+  }
+};
+
+export class HTMLDiagnosticGenerator {
   constructor(
     private htmlContent: string,
     private document: vscode.TextDocument,
@@ -42,82 +76,67 @@ export class HTMLDiagnosticGenerator {
       new InputValidator(),
       new LinkValidator(),
       new HeadingValidator(),
-    ]
+    ],
+    private parser: (text: string) => HTMLParsedDocument = defaultHTMLParser
   ) {}
 
   /**
-   * Generates and returns all diagnostics after running the validation process.
+   * Stage 1 — parse the input text into a typed document via the injected
+   * parser. Throws {@link ParseError} when parsing fails.
    */
-  generateDiagnostics() {
-    try {
-      const parsedHtml = this.parseHtmlDocument();
-      const nodeOrganizer = this.organizeNodes(parsedHtml);
-      this.runRuleValidators(nodeOrganizer);
-    } catch (error) {
-      console.error('Error parsing HTML: ', error);
-    }
-
-    return this.diagnostics;
+  public parse(text: string): HTMLParsedDocument {
+    return this.parser(text);
   }
 
-  private runRuleValidators(nodeOrganizer: NodeOrganizer) {
+  /**
+   * Stage 2 — drive every RuleValidator across the parsed document and return
+   * the collected violations. Pure function of `doc` + the validators array;
+   * no parser involvement, no VS Code dependency.
+   */
+  public validate(doc: HTMLParsedDocument): RuleViolation[] {
+    const violations: RuleViolation[] = [];
     const context: ValidationContext = { seenElements: [] };
     this.ruleValidators.forEach((v) => v.reset?.());
 
     this.ruleValidators.forEach((validator) => {
-      nodeOrganizer.getNodes(validator.tags).forEach((el) => {
+      doc.organizer.getNodes(validator.tags).forEach((el) => {
         const adapter = new HTMLNodeAdapter(el);
         validator.validate(adapter, context).forEach((violation) => {
-          this.diagnostics.push(this.ruleViolationToDiagnostic(violation, adapter));
+          violations.push(
+            violation.node ? violation : { ...violation, node: adapter }
+          );
         });
       });
     });
 
     this.ruleValidators.forEach((validator) => {
       validator.finalize?.(context).forEach((violation) => {
-        this.diagnostics.push(this.ruleViolationToDiagnostic(violation));
+        violations.push(violation);
       });
     });
-  }
 
-  private ruleViolationToDiagnostic(
-    { message, severity, node }: RuleViolation,
-    adapter?: HTMLNodeAdapter
-  ): vscode.Diagnostic {
-    const target = adapter ?? (node as HTMLNodeAdapter | undefined);
-    const startIndex = target?.startIndex;
-    const endIndex = target?.endIndex;
-    const range =
-      startIndex !== undefined && endIndex !== undefined
-        ? new vscode.Range(
-            this.document.positionAt(startIndex),
-            this.document.positionAt(endIndex)
-          )
-        : new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
-    return new vscode.Diagnostic(range, message, severity ?? DiagnosticSeverity.Warning);
+    return violations;
   }
 
   /**
-   * Parses the HTML content into a document object.
+   * Stage 3 — map a prebuilt RuleViolation[] to vscode.Diagnostic[] using the
+   * HTML-specific PositionResolver (character offsets via
+   * TextDocument.positionAt).
    */
-  private parseHtmlDocument() {
-    return parseDocument(this.htmlContent, {
-      withStartIndices: true,
-      withEndIndices: true,
-    });
+  public diagnose(
+    violations: RuleViolation[],
+    _doc?: HTMLParsedDocument
+  ): vscode.Diagnostic[] {
+    const resolver = new HTMLPositionResolver(this.document);
+    return violations.map((v) => buildDiagnostic(v, resolver.resolve(v)));
   }
 
   /**
-   * Organizes the nodes into a structure accessible by tag name.
+   * Public entry point — parse, validate, diagnose. Surfaces ParseError.
    */
-  private organizeNodes(parsedHtml: Document) {
-    return new NodeOrganizer(this.getNodes(parsedHtml));
-  }
-
-  /**
-   * Search a node and its children for nodes with the type "tag".
-   */
-  private getNodes(parsedHtml: Document) {
-    return DomUtils.filter((node) => node.type === TAG, parsedHtml.children);
+  generateDiagnostics() {
+    const doc = this.parse(this.htmlContent);
+    const violations = this.validate(doc);
+    return this.diagnose(violations, doc);
   }
 }
