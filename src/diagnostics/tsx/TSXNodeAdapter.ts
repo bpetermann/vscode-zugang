@@ -85,7 +85,10 @@ export class TSXNodeAdapter implements AccessibilityNode {
     return undefined;
   }
 
-  /** Inline styles parsed from the JSX object-literal `style` prop into a key/value record. */
+  /**
+   * Inline styles parsed from the JSX object-literal `style` prop into a key/value record.
+   * Keys are normalised to kebab-case so HTML and TSX adapters share a vocabulary.
+   */
   get style(): Record<string, string | number | boolean> {
     const styles: Record<string, string | number | boolean> = {};
     const styleAttr = this.node.openingElement.attributes.find(
@@ -110,7 +113,9 @@ export class TSXNodeAdapter implements AccessibilityNode {
         }
         const { key, value } = prop as jsx.ObjectProperty;
         if (NAME in key && VALUE in value) {
-          styles[(key as jsx.Identifier).name] = (
+          const camel = (key as jsx.Identifier).name;
+          const kebab = camel.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+          styles[kebab] = (
             value as jsx.StringLiteral | jsx.NumericLiteral | jsx.BooleanLiteral
           ).value;
         }
