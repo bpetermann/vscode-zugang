@@ -1,8 +1,8 @@
 import assert from 'assert';
-import { HeadingValidator } from '../diagnostics/validators/HeadingValidator';
 import { messages } from '../diagnostics/utils/messages';
-import { FakeNode } from './FakeNode';
 import { ValidationContext } from '../diagnostics/utils/RuleValidator';
+import { HeadingValidator } from '../diagnostics/validators/HeadingValidator';
+import { FakeNode } from './FakeNode';
 
 const ctx = (): ValidationContext => ({ seenElements: [] });
 
@@ -70,5 +70,22 @@ suite('HeadingValidator Test Suite', () => {
     validator.reset();
     validator.validate(new FakeNode('h1'), c);
     assert.strictEqual(validator.finalize(c).length, 0);
+  });
+
+  test('heading with empty text emits a heading.blank violation', () => {
+    const validator = new HeadingValidator();
+    const blank = new FakeNode('h1');
+    const violations = validator.validate(blank, ctx());
+    assert.strictEqual(violations.length, 1);
+    assert.strictEqual(violations[0].message, messages.heading.blank);
+    assert.strictEqual(violations[0].node, blank);
+  });
+
+  test('heading with non-empty text emits no per-node violation', () => {
+    const validator = new HeadingValidator();
+    const h1 = new FakeNode('h1');
+    h1.text = 'Hello';
+    const violations = validator.validate(h1, ctx());
+    assert.strictEqual(violations.length, 0);
   });
 });

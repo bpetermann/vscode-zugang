@@ -3,18 +3,21 @@ import traverse from '@babel/traverse';
 import * as jsx from '@babel/types';
 import * as vscode from 'vscode';
 import { DiagnosticSeverity } from 'vscode';
-import { RuleValidator, RuleViolation, ValidationContext } from '../utils/RuleValidator';
-import { TSXNodeAdapter } from './TSXNodeAdapter';
-import { TSXElement } from './Element';
 import {
-  HeadingValidator,
-  StyleValidator,
-} from './validators';
+  RuleValidator,
+  RuleViolation,
+  ValidationContext,
+} from '../utils/RuleValidator';
+import { ButtonValidator } from '../validators/ButtonValidator';
+import { HeadingValidator } from '../validators/HeadingValidator';
+import { UniquenessValidator } from '../validators/UniquenessValidator';
+import { TSXElement } from './Element';
+import { TSXNodeAdapter } from './TSXNodeAdapter';
+import { StyleValidator } from './validators';
+import { DivValidator } from './validators/Div';
 import { ImageValidator } from './validators/Image';
 import { LinkValidator } from './validators/Link';
-import { DivValidator } from './validators/Div';
 import { Validator } from './validators/Validator';
-import { ButtonValidator } from '../validators/ButtonValidator';
 
 export class TSXDiagnosticGenerator {
   private diagnostics: vscode.Diagnostic[] = [];
@@ -22,18 +25,17 @@ export class TSXDiagnosticGenerator {
   constructor(
     private text: string,
     private styleValidator = new StyleValidator(),
-    private elements: string[] = [],
     // Legacy validators using the old Validator interface — being migrated to RuleValidator in issues #05–#08.
-    private validators: Validator[] = [
-      new HeadingValidator(),
-    ],
+    private validators: Validator[] = [],
     // Migrated validators using the new RuleValidator interface. Will replace validators[] in issue #09.
     private ruleValidators: RuleValidator[] = [
       new ButtonValidator(),
       new ImageValidator(),
       new LinkValidator(),
       new DivValidator(),
-    ]
+      new HeadingValidator(),
+      new UniquenessValidator(),
+    ],
   ) {}
 
   /**
@@ -42,14 +44,15 @@ export class TSXDiagnosticGenerator {
   public generateDiagnostics(): vscode.Diagnostic[] {
     try {
       const ast = this.parseText();
+      const seenElements: string[] = [];
+      const context: ValidationContext = { seenElements };
 
       this.ruleValidators.forEach((v) => v.reset?.());
 
       traverse(ast, {
-        JSXElement: (path) => this.checkElement(path.node),
+        JSXElement: (path) => this.checkElement(path.node, context),
       });
 
-      const context: ValidationContext = { seenElements: this.elements };
       this.ruleValidators.forEach((validator) => {
         validator.finalize?.(context).forEach((violation) => {
           this.diagnostics.push(this.ruleViolationToDiagnostic(violation));
@@ -65,7 +68,7 @@ export class TSXDiagnosticGenerator {
   /**
    * Checks a JSX element and adds diagnostics if issues are found.
    */
-  private checkElement(node: jsx.JSXElement): void {
+  private checkElement(node: jsx.JSXElement, context: ValidationContext): void {
     const element = new TSXElement(node);
 
     if (!element.name) {
@@ -78,14 +81,12 @@ export class TSXDiagnosticGenerator {
       this.diagnostics.push(...this.collectDiagnostics(element, validator));
     }
 
-    // New path: RuleValidator handles this element.
-    // NOTE: a tag must live in exactly one of validators[] / ruleValidators[] during the migration —
-    // double-registering would run styleValidator.validate(element) twice (once via legacy accept,
-    // once via the bridge below). Migrations #05/#06 must remove from validators[] when moving to ruleValidators[].
-    const ruleValidator = this.ruleValidators.find(({ tags }) =>
-      tags.includes(element.name!)
+    // New path: RuleValidator(s) handle this element. More than one validator
+    // may claim the same tag (e.g. h1 → HeadingValidator + UniquenessValidator).
+    const ruleValidators = this.ruleValidators.filter(({ tags }) =>
+      tags.includes(element.name!),
     );
-    if (ruleValidator) {
+    if (ruleValidators.length > 0) {
       // Style checks not yet migrated to RuleValidator — bridge via direct call until issue #08/#09.
       // img is exempt to match the legacy validateImage() no-op behavior from the Visitor pattern.
       if (element.name !== 'img') {
@@ -94,27 +95,27 @@ export class TSXDiagnosticGenerator {
         });
       }
       const adapter = new TSXNodeAdapter(node);
-      const context: ValidationContext = { seenElements: this.elements };
-      ruleValidator.validate(adapter, context).forEach((violation) => {
-        this.diagnostics.push(this.ruleViolationToDiagnostic(violation, adapter));
+      ruleValidators.forEach((ruleValidator) => {
+        ruleValidator.validate(adapter, context).forEach((violation) => {
+          this.diagnostics.push(
+            this.ruleViolationToDiagnostic(violation, adapter),
+          );
+        });
       });
     }
 
-    if (validator || ruleValidator) {
-      this.elements.push(element.name);
+    if (validator || ruleValidators.length > 0) {
+      context.seenElements.push(element.name);
     }
   }
 
   private collectDiagnostics(
     element: TSXElement,
-    validator: Validator
+    validator: Validator,
   ): vscode.Diagnostic[] {
-    return [
-      ...validator.accept(this.styleValidator, element),
-      ...(validator instanceof HeadingValidator
-        ? validator.validate(element, this.elements)
-        : validator.validate(element)),
-    ].map(({ diagnostic }) => diagnostic);
+    return validator
+      .accept(this.styleValidator, element)
+      .map(({ diagnostic }) => diagnostic);
   }
 
   private findValidator(name: string): Validator | undefined {
@@ -123,20 +124,25 @@ export class TSXDiagnosticGenerator {
 
   private ruleViolationToDiagnostic(
     { message, severity, node, loc: violationLoc }: RuleViolation,
-    adapter?: TSXNodeAdapter
+    adapter?: TSXNodeAdapter,
   ): vscode.Diagnostic {
     const loc =
-      adapter?.loc ??
-      (node as TSXNodeAdapter | undefined)?.loc ??
-      violationLoc;
+      adapter?.loc ?? (node as TSXNodeAdapter | undefined)?.loc ?? violationLoc;
     const range =
       loc?.start && loc?.end
         ? new vscode.Range(
             new vscode.Position(loc.start.line - 1, loc.start.column),
-            new vscode.Position(loc.end.line - 1, loc.end.column)
+            new vscode.Position(loc.end.line - 1, loc.end.column),
           )
-        : new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
-    return new vscode.Diagnostic(range, message, severity ?? DiagnosticSeverity.Warning);
+        : new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(0, 0),
+          );
+    return new vscode.Diagnostic(
+      range,
+      message,
+      severity ?? DiagnosticSeverity.Warning,
+    );
   }
 
   /**

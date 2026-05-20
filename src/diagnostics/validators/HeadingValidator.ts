@@ -21,6 +21,9 @@ export class HeadingValidator implements RuleValidator {
     if (node.name && !this.firstByLevel.has(node.name)) {
       this.firstByLevel.set(node.name, node);
     }
+    if (!node.text.trim()) {
+      return [{ message: messages.heading.blank, node }];
+    }
     return [];
   }
 
