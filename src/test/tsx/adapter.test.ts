@@ -57,11 +57,11 @@ suite('TSXNodeAdapter Test Suite', () => {
   });
 
   suite('style', () => {
-    test('parses JSX object-literal style prop into a record', () => {
+    test('parses JSX object-literal style prop into a record with kebab-case keys', () => {
       const node = parseJSX('<div style={{ fontSize: "16px", lineHeight: 1.5 }} />');
       const style = new TSXNodeAdapter(node).style;
-      assert.strictEqual(style['fontSize'], '16px');
-      assert.strictEqual(style['lineHeight'], 1.5);
+      assert.strictEqual(style['font-size'], '16px');
+      assert.strictEqual(style['line-height'], 1.5);
     });
 
     test('returns empty object when no style prop present', () => {

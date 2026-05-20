@@ -1,6 +1,5 @@
 import * as assert from 'assert';
 import { TSXDiagnosticGenerator } from '../../diagnostics/tsx/DiagnosticGenerator';
-import { StyleValidator } from '../../diagnostics/tsx/validators';
 import { DIV, H1, H2, H3 } from '../../diagnostics/utils/constants';
 import { messages } from '../../diagnostics/utils/messages';
 import { HeadingValidator } from '../../diagnostics/validators/HeadingValidator';
@@ -76,12 +75,9 @@ suite('Heading Test Suite', () => {
     const sharedHeading = new HeadingValidator();
 
     const firstDoc = await getDocument(h3);
-    const firstRun = new TSXDiagnosticGenerator(
-      firstDoc.getText(),
-      new StyleValidator(),
-      [],
-      [sharedHeading],
-    ).generateDiagnostics();
+    const firstRun = new TSXDiagnosticGenerator(firstDoc.getText(), [
+      sharedHeading,
+    ]).generateDiagnostics();
 
     assert.ok(
       firstRun.some((d) => d.message === messages.heading.shouldExist),
@@ -89,12 +85,9 @@ suite('Heading Test Suite', () => {
     );
 
     const secondDoc = await getDocument(h1);
-    const secondRun = new TSXDiagnosticGenerator(
-      secondDoc.getText(),
-      new StyleValidator(),
-      [],
-      [sharedHeading],
-    ).generateDiagnostics();
+    const secondRun = new TSXDiagnosticGenerator(secondDoc.getText(), [
+      sharedHeading,
+    ]).generateDiagnostics();
 
     assert.strictEqual(
       secondRun.filter((d) => d.message === messages.heading.shouldExist)

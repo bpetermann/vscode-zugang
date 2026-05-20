@@ -1,5 +1,7 @@
 import * as assert from 'assert';
+import { TSXDiagnosticGenerator } from '../../diagnostics/tsx/DiagnosticGenerator';
 import { messages } from '../../diagnostics/utils/messages';
+import { StyleValidator } from '../../diagnostics/validators/StyleValidator';
 import {
   createElement,
   generateDiagnostics,
@@ -170,5 +172,35 @@ suite('TSX Style Validator Test Suite', () => {
     const { message } = generateDiagnostics(document)?.[0];
 
     assert.strictEqual(message, messages.style.family + 'Chiller');
+  });
+
+  test('StyleValidator participates as a plain RuleValidator (no special handling)', async () => {
+    const element = createElement('div', {
+      color: 'black',
+      backgroundColor: 'black',
+    });
+
+    const document = await getDocument(element);
+    const diagnostics = new TSXDiagnosticGenerator(document.getText(), [
+      new StyleValidator(),
+    ]).generateDiagnostics();
+
+    assert.strictEqual(diagnostics.length, 1);
+    assert.strictEqual(diagnostics[0].message, messages.style.color);
+  });
+
+  test('img is exempt from StyleValidator via STYLE_TAGS — no img conditional needed', async () => {
+    const img =
+      '<img alt="x" style={{color: "black", backgroundColor: "black"}} />';
+
+    const document = await getDocument(img);
+    const diagnostics = new TSXDiagnosticGenerator(document.getText(), [
+      new StyleValidator(),
+    ]).generateDiagnostics();
+
+    assert.strictEqual(
+      diagnostics.filter((d) => d.message === messages.style.color).length,
+      0
+    );
   });
 });
