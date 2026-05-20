@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
-import { HTMLDiagnosticGenerator as DiagnosticGenerator } from './diagnostics/html/DiagnosticGenerator';
+import { DiagnosticSeverity } from 'vscode';
+import { HTMLDiagnosticGenerator } from './diagnostics/html/DiagnosticGenerator';
 import { TSXDiagnosticGenerator } from './diagnostics/tsx/DiagnosticGenerator';
 import { HTML, TYPESCRIPT_REACT } from './diagnostics/utils/constants';
+import { ParseError } from './diagnostics/utils/ParseError';
 
 class DiagnosticManager {
   private diagnosticCollection: vscode.DiagnosticCollection;
@@ -20,25 +22,47 @@ class DiagnosticManager {
   }
 }
 
+/**
+ * Run the accessibility pipeline for a single text document and return the
+ * resulting diagnostics. A {@link ParseError} thrown by either generator is
+ * surfaced as a single diagnostic anchored at (0,0) so the user sees the
+ * failure inline rather than silently losing all checks for the file.
+ */
+export function generateDocumentDiagnostics(
+  document: vscode.TextDocument
+): vscode.Diagnostic[] {
+  const text = document.getText();
+  try {
+    switch (document.languageId) {
+      case HTML:
+        return new HTMLDiagnosticGenerator(text, document).generateDiagnostics();
+      case TYPESCRIPT_REACT:
+        return new TSXDiagnosticGenerator(text).generateDiagnostics();
+      default:
+        return [];
+    }
+  } catch (error) {
+    if (error instanceof ParseError) {
+      const zero = new vscode.Range(
+        new vscode.Position(0, 0),
+        new vscode.Position(0, 0)
+      );
+      return [
+        new vscode.Diagnostic(zero, error.message, DiagnosticSeverity.Error),
+      ];
+    }
+    throw error;
+  }
+}
+
 export function activate(context: vscode.ExtensionContext) {
   const diagnosticManager = new DiagnosticManager(context);
 
   vscode.workspace.onDidChangeTextDocument((event) => {
-    const diagnostics: vscode.Diagnostic[] = [];
-    const text = event.document.getText();
-
-    switch (event.document.languageId) {
-      case HTML:
-        const htmlGenerator = new DiagnosticGenerator(text, event.document);
-        diagnostics.push(...htmlGenerator.generateDiagnostics());
-        break;
-      case TYPESCRIPT_REACT:
-        const tsxGenerator = new TSXDiagnosticGenerator(text);
-        diagnostics.push(...tsxGenerator.generateDiagnostics());
-        break;
-    }
-
-    diagnosticManager.updateDiagnostics(event.document, diagnostics);
+    diagnosticManager.updateDiagnostics(
+      event.document,
+      generateDocumentDiagnostics(event.document)
+    );
   });
 }
 
