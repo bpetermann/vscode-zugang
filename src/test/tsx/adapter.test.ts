@@ -81,9 +81,36 @@ suite('TSXNodeAdapter Test Suite', () => {
       assert.strictEqual(new TSXNodeAdapter(node).getAttribute('role'), undefined);
     });
 
-    test('returns undefined for a non-string-literal value', () => {
-      const node = parseJSX('<div tabIndex={0} />');
+    test('returns stringified value for a NumericLiteral expression (e.g. tabIndex={2})', () => {
+      const node = parseJSX('<div tabIndex={2} />');
+      assert.strictEqual(new TSXNodeAdapter(node).getAttribute('tabIndex'), '2');
+    });
+
+    test('returns the string value for a StringLiteral expression (e.g. role={"button"})', () => {
+      const node = parseJSX('<div role={"button"} />');
+      assert.strictEqual(new TSXNodeAdapter(node).getAttribute('role'), 'button');
+    });
+
+    test('returns "true"/"false" for a BooleanLiteral expression (e.g. hidden={true})', () => {
+      const trueNode = parseJSX('<div hidden={true} />');
+      assert.strictEqual(new TSXNodeAdapter(trueNode).getAttribute('hidden'), 'true');
+      const falseNode = parseJSX('<div hidden={false} />');
+      assert.strictEqual(new TSXNodeAdapter(falseNode).getAttribute('hidden'), 'false');
+    });
+
+    test('returns cooked string for a no-expression template literal (e.g. role={`button`})', () => {
+      const node = parseJSX('<div role={`button`} />');
+      assert.strictEqual(new TSXNodeAdapter(node).getAttribute('role'), 'button');
+    });
+
+    test('returns undefined for an identifier expression (e.g. tabIndex={x})', () => {
+      const node = parseJSX('<div tabIndex={x} />');
       assert.strictEqual(new TSXNodeAdapter(node).getAttribute('tabIndex'), undefined);
+    });
+
+    test('returns undefined for a template literal containing expressions', () => {
+      const node = parseJSX('<div role={`foo-${x}`} />');
+      assert.strictEqual(new TSXNodeAdapter(node).getAttribute('role'), undefined);
     });
   });
 

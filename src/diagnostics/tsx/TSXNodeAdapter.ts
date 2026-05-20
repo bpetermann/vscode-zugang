@@ -1,32 +1,36 @@
 import * as jsx from '@babel/types';
+import { AccessibilityNode, NodeLocation } from '../utils/AccessibilityNode';
 import {
   ABSTRACT_ROLES,
+  BOOLEAN_LITERAL,
   BUTTON,
   CONTENT_EDITABLE,
   DISABLED,
+  EXPRESSION,
   HREF,
   INERT,
   INPUT,
   JSX_ATTRIBUTE,
   JSX_ELEMENT,
+  JSX_EXPRESSION_CONTAINER,
+  JSX_FRAGMENT,
   JSX_IDENTIFIER,
   JSX_MEMBER_EXPRESSION,
   JSX_TEXT,
   LINK,
   NAME,
+  NUMERIC_LITERAL,
   OBJECT_EXPRESSION,
   OBJECT_PROPERTY,
   ROLE,
   SELECT,
   STRING_LITERAL,
   TABINDEX,
+  TEMPLATE_LITERAL,
   TEXTAREA,
   TRUE,
   VALUE,
-  EXPRESSION,
-  JSX_FRAGMENT,
 } from '../utils/constants';
-import { AccessibilityNode, NodeLocation } from '../utils/AccessibilityNode';
 
 export class TSXNodeAdapter implements AccessibilityNode {
   constructor(private node: jsx.JSXElement) {}
@@ -57,9 +61,9 @@ export class TSXNodeAdapter implements AccessibilityNode {
 
   /** Text content of the first direct JSXText child, or an empty string. */
   get text(): string {
-    const child = this.node.children.find(
-      ({ type }) => type === JSX_TEXT
-    ) as jsx.JSXText | undefined;
+    const child = this.node.children.find(({ type }) => type === JSX_TEXT) as
+      | jsx.JSXText
+      | undefined;
     return child?.value ?? '';
   }
 
@@ -94,7 +98,7 @@ export class TSXNodeAdapter implements AccessibilityNode {
     const styleAttr = this.node.openingElement.attributes.find(
       (attr) =>
         attr.type === JSX_ATTRIBUTE &&
-        (attr as jsx.JSXAttribute).name.name === 'style'
+        (attr as jsx.JSXAttribute).name.name === 'style',
     ) as jsx.JSXAttribute | undefined;
 
     if (
@@ -147,27 +151,62 @@ export class TSXNodeAdapter implements AccessibilityNode {
   }
 
   /**
-   * Returns the string value of the named attribute if it is a string literal, otherwise `undefined`.
-   * Expression values (e.g. `tabIndex={0}`) are not returned.
+   * Returns the string value of the named attribute when it can be statically determined:
+   * - `foo="bar"` (StringLiteral)
+   * - `foo={2}`, `foo={"bar"}`, `foo={true}` (JSXExpressionContainer wrapping a literal)
+   *
+   * Returns `undefined` for attributes whose runtime value cannot be read at lint
+   * time (identifiers, calls, member expressions, template literals containing
+   * expressions). Numeric values are returned as their `String()` form so callers
+   * can keep using `+value` for coercion.
+   *
+   * Attribute names are matched case-insensitively so React-idiomatic spellings
+   * (`tabIndex`) resolve against the shared HTML-spelling vocabulary
+   * (`tabindex`) used by RuleValidators.
    */
   getAttribute(name: string): string | undefined {
-    const attr = this.node.openingElement.attributes.find(
-      (a) =>
-        a.type === JSX_ATTRIBUTE &&
-        (a as jsx.JSXAttribute).name.name === name
-    ) as jsx.JSXAttribute | undefined;
-    if (attr?.value?.type === STRING_LITERAL) {
-      return (attr.value as jsx.StringLiteral).value;
+    const attr = this.findAttribute(name);
+    const value = attr?.value;
+    if (!value) {
+      return undefined;
     }
+    if (value.type === STRING_LITERAL) {
+      return (value as jsx.StringLiteral).value;
+    }
+    if (value.type === JSX_EXPRESSION_CONTAINER) {
+      const expr = (value as jsx.JSXExpressionContainer).expression;
+      if (expr.type === NUMERIC_LITERAL) {
+        return String((expr as jsx.NumericLiteral).value);
+      }
+      if (expr.type === STRING_LITERAL) {
+        return (expr as jsx.StringLiteral).value;
+      }
+      if (expr.type === BOOLEAN_LITERAL) {
+        return String((expr as jsx.BooleanLiteral).value);
+      }
+      if (expr.type === TEMPLATE_LITERAL) {
+        const tmpl = expr as jsx.TemplateLiteral;
+        if (tmpl.expressions.length === 0 && tmpl.quasis.length === 1) {
+          return tmpl.quasis[0].value.cooked;
+        }
+      }
+    }
+    return undefined;
   }
 
   /** Returns `true` if the named attribute is present, regardless of value type. */
   hasAttribute(name: string): boolean {
-    return this.node.openingElement.attributes.some(
+    return this.findAttribute(name) !== undefined;
+  }
+
+  private findAttribute(name: string): jsx.JSXAttribute | undefined {
+    const lower = name.toLowerCase();
+    return this.node.openingElement.attributes.find(
       (a) =>
         a.type === JSX_ATTRIBUTE &&
-        (a as jsx.JSXAttribute).name.name === name
-    );
+        typeof (a as jsx.JSXAttribute).name.name === 'string' &&
+        ((a as jsx.JSXAttribute).name.name as string).toLowerCase() === lower,
+    ) as jsx.JSXAttribute | undefined;
   }
 
   /** Returns all JSXIdentifier attribute names on this element. */
@@ -176,7 +215,7 @@ export class TSXNodeAdapter implements AccessibilityNode {
       .filter(
         (a) =>
           a.type === JSX_ATTRIBUTE &&
-          (a as jsx.JSXAttribute).name.type === JSX_IDENTIFIER
+          (a as jsx.JSXAttribute).name.type === JSX_IDENTIFIER,
       )
       .map((a) => ((a as jsx.JSXAttribute).name as jsx.JSXIdentifier).name);
   }
@@ -188,7 +227,7 @@ export class TSXNodeAdapter implements AccessibilityNode {
         c.type === JSX_ELEMENT &&
         NAME in (c as jsx.JSXElement).openingElement.name &&
         ((c as jsx.JSXElement).openingElement.name as jsx.JSXIdentifier)
-          .name === tag
+          .name === tag,
     ) as jsx.JSXElement | undefined;
     return child ? new TSXNodeAdapter(child) : undefined;
   }
@@ -198,9 +237,9 @@ export class TSXNodeAdapter implements AccessibilityNode {
     let el = this.node;
     let count = 1;
     while (true) {
-      const first = el.children.find(
-        (c) => c.type === JSX_ELEMENT
-      ) as jsx.JSXElement | undefined;
+      const first = el.children.find((c) => c.type === JSX_ELEMENT) as
+        | jsx.JSXElement
+        | undefined;
       if (!first) {
         break;
       }
@@ -227,13 +266,14 @@ export class TSXNodeAdapter implements AccessibilityNode {
    * Accounts for form controls, links, tabindex, inert, disabled, contenteditable, and button role.
    */
   isNotFocusable(): boolean {
-    const isIdentifier =
-      this.node.openingElement.name.type === JSX_IDENTIFIER;
+    const isIdentifier = this.node.openingElement.name.type === JSX_IDENTIFIER;
     const asIdentifier = this.node.openingElement.name as jsx.JSXIdentifier;
 
     const isFormControl =
       isIdentifier &&
-      ([INPUT, BUTTON, TEXTAREA, SELECT] as string[]).includes(asIdentifier.name);
+      ([INPUT, BUTTON, TEXTAREA, SELECT] as string[]).includes(
+        asIdentifier.name,
+      );
     const isLink = isIdentifier && asIdentifier.name === LINK;
 
     const rawTabIndex = this.getAttribute(TABINDEX);
@@ -265,13 +305,13 @@ export class TSXNodeAdapter implements AccessibilityNode {
       return false;
     }
     return this.flattenedDescendantElements(this.node).every((child) =>
-      new TSXNodeAdapter(child).canHaveAriaHidden()
+      new TSXNodeAdapter(child).canHaveAriaHidden(),
     );
   }
 
   /** Flattens direct JSXElement descendants, traversing through JSXFragment children. */
   private flattenedDescendantElements(
-    element: jsx.JSXElement | jsx.JSXFragment
+    element: jsx.JSXElement | jsx.JSXFragment,
   ): jsx.JSXElement[] {
     return element.children.flatMap((child) => {
       if (child.type === JSX_ELEMENT) {

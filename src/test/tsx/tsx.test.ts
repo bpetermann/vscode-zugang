@@ -284,4 +284,18 @@ suite('TSX Test Suite', () => {
 
     assert.strictEqual(message, messages.link.mail);
   });
+
+  test('<button tabIndex={2}> (React idiomatic numeric prop) triggers button.tabindex', async () => {
+    const content = `<button tabIndex={2}>Click</button>`;
+
+    const document = await getDocument(content);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.button.tabindex),
+      `expected button.tabindex; got: ${diagnostics
+        .map((d) => d.message)
+        .join(' | ')}`
+    );
+  });
 });
