@@ -10,24 +10,18 @@ import {
 } from '../utils/RuleValidator';
 import { ButtonValidator } from '../validators/ButtonValidator';
 import { HeadingValidator } from '../validators/HeadingValidator';
+import { StyleValidator } from '../validators/StyleValidator';
 import { UniquenessValidator } from '../validators/UniquenessValidator';
-import { TSXElement } from './Element';
 import { TSXNodeAdapter } from './TSXNodeAdapter';
-import { StyleValidator } from './validators';
 import { DivValidator } from './validators/Div';
 import { ImageValidator } from './validators/Image';
 import { LinkValidator } from './validators/Link';
-import { Validator } from './validators/Validator';
 
 export class TSXDiagnosticGenerator {
   private diagnostics: vscode.Diagnostic[] = [];
 
   constructor(
     private text: string,
-    private styleValidator = new StyleValidator(),
-    // Legacy validators using the old Validator interface — being migrated to RuleValidator in issues #05–#08.
-    private validators: Validator[] = [],
-    // Migrated validators using the new RuleValidator interface. Will replace validators[] in issue #09.
     private ruleValidators: RuleValidator[] = [
       new ButtonValidator(),
       new ImageValidator(),
@@ -35,6 +29,7 @@ export class TSXDiagnosticGenerator {
       new DivValidator(),
       new HeadingValidator(),
       new UniquenessValidator(),
+      new StyleValidator(),
     ],
   ) {}
 
@@ -69,57 +64,29 @@ export class TSXDiagnosticGenerator {
    * Checks a JSX element and adds diagnostics if issues are found.
    */
   private checkElement(node: jsx.JSXElement, context: ValidationContext): void {
-    const element = new TSXElement(node);
+    const adapter = new TSXNodeAdapter(node);
+    const name = adapter.name;
 
-    if (!element.name) {
+    if (!name) {
       return;
     }
 
-    // Legacy path: old-interface validator handles this element.
-    const validator = this.findValidator(element.name);
-    if (validator) {
-      this.diagnostics.push(...this.collectDiagnostics(element, validator));
-    }
-
-    // New path: RuleValidator(s) handle this element. More than one validator
-    // may claim the same tag (e.g. h1 → HeadingValidator + UniquenessValidator).
-    const ruleValidators = this.ruleValidators.filter(({ tags }) =>
-      tags.includes(element.name!),
+    const matching = this.ruleValidators.filter(({ tags }) =>
+      tags.includes(name),
     );
-    if (ruleValidators.length > 0) {
-      // Style checks not yet migrated to RuleValidator — bridge via direct call until issue #08/#09.
-      // img is exempt to match the legacy validateImage() no-op behavior from the Visitor pattern.
-      if (element.name !== 'img') {
-        this.styleValidator.validate(element).forEach(({ diagnostic }) => {
-          this.diagnostics.push(diagnostic);
-        });
-      }
-      const adapter = new TSXNodeAdapter(node);
-      ruleValidators.forEach((ruleValidator) => {
-        ruleValidator.validate(adapter, context).forEach((violation) => {
-          this.diagnostics.push(
-            this.ruleViolationToDiagnostic(violation, adapter),
-          );
-        });
+    if (matching.length === 0) {
+      return;
+    }
+
+    matching.forEach((ruleValidator) => {
+      ruleValidator.validate(adapter, context).forEach((violation) => {
+        this.diagnostics.push(
+          this.ruleViolationToDiagnostic(violation, adapter),
+        );
       });
-    }
+    });
 
-    if (validator || ruleValidators.length > 0) {
-      context.seenElements.push(element.name);
-    }
-  }
-
-  private collectDiagnostics(
-    element: TSXElement,
-    validator: Validator,
-  ): vscode.Diagnostic[] {
-    return validator
-      .accept(this.styleValidator, element)
-      .map(({ diagnostic }) => diagnostic);
-  }
-
-  private findValidator(name: string): Validator | undefined {
-    return this.validators.find(({ tags }) => tags.includes(name));
+    context.seenElements.push(name);
   }
 
   private ruleViolationToDiagnostic(
