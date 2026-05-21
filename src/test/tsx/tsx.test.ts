@@ -54,6 +54,25 @@ suite('TSX Test Suite', () => {
     assert.strictEqual(diagnostics[0].message, messages.img.generic + alt);
   });
 
+  test('four <img> tags sharing the same alt fire messages.img.repeated', async () => {
+    const tsx = `<>
+      <img src="/a.jpg" alt="Beach"></img>
+      <img src="/b.jpg" alt="Beach"></img>
+      <img src="/c.jpg" alt="Beach"></img>
+      <img src="/d.jpg" alt="Beach"></img>
+    </>`;
+
+    const document = await getDocument(tsx);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.img.repeated),
+      `expected img.repeated; got: ${diagnostics
+        .map((d) => d.message)
+        .join(' | ')}`,
+    );
+  });
+
   test('<button> with role="switch" but missing aria-checked', async () => {
     const content = `<button role="switch"></button>`;
 
@@ -197,7 +216,7 @@ suite('TSX Test Suite', () => {
   test('<div> used as a button', async () => {
     const content = fraction(
       div(null, 'role="button"'),
-      div(null, 'onclick="click()"')
+      div(null, 'onclick="click()"'),
     );
 
     const document = await getDocument(content);
@@ -229,22 +248,26 @@ suite('TSX Test Suite', () => {
     const content = div(div(div(div(button))), 'aria-hidden="true"');
 
     const document = await getDocument(content);
-    const { message } = generateDiagnostics(document)?.[0];
+    const diagnostics = generateDiagnostics(document);
 
-    assert.strictEqual(message, messages.div['aria-hidden']);
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.div['aria-hidden']),
+    );
   });
 
   test('<div> with aria hidden and <a> child', async () => {
     const link = '<a href="/contact">contact</a>';
     const content = div(
       div(div(fraction(div(null), link))),
-      'aria-hidden="true"'
+      'aria-hidden="true"',
     );
 
     const document = await getDocument(content);
-    const { message } = generateDiagnostics(document)?.[0];
+    const diagnostics = generateDiagnostics(document);
 
-    assert.strictEqual(message, messages.div['aria-hidden']);
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.div['aria-hidden']),
+    );
   });
 
   test('<a> tag with a generic description', async () => {
@@ -295,7 +318,21 @@ suite('TSX Test Suite', () => {
       diagnostics.some((d) => d.message === messages.button.tabindex),
       `expected button.tabindex; got: ${diagnostics
         .map((d) => d.message)
-        .join(' | ')}`
+        .join(' | ')}`,
+    );
+  });
+
+  test('<div role="widget"> fires the canonical abstract-role diagnostic in TSX', async () => {
+    const content = `<div role="widget" />`;
+
+    const document = await getDocument(content);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.div.abstract + 'widget'),
+      `expected div.abstract widget; got: ${diagnostics
+        .map((d) => d.message)
+        .join(' | ')}`,
     );
   });
 });

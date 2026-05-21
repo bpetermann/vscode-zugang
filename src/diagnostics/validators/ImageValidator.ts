@@ -1,4 +1,4 @@
-import { ALT, IMG } from '../utils/constants';
+import { ALT, GENERIC_ALT, IMG } from '../utils/constants';
 import { messages } from '../utils/messages';
 import { AccessibilityNode } from '../utils/AccessibilityNode';
 import {
@@ -29,6 +29,9 @@ export class ImageValidator implements RuleValidator {
         this.altCounts.set(alt, node);
       }
       this.altOccurrences.set(alt, (this.altOccurrences.get(alt) ?? 0) + 1);
+      if (alt.split(' ').some((t) => GENERIC_ALT.includes(t))) {
+        return [{ message: messages.img.generic + alt }];
+      }
     }
     return [];
   }

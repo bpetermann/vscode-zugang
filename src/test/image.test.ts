@@ -1,8 +1,8 @@
 import assert from 'assert';
-import { ImageValidator } from '../diagnostics/validators/ImageValidator';
 import { messages } from '../diagnostics/utils/messages';
-import { FakeNode } from './FakeNode';
 import { ValidationContext } from '../diagnostics/utils/RuleValidator';
+import { ImageValidator } from '../diagnostics/validators/ImageValidator';
+import { FakeNode } from './FakeNode';
 
 const ctx = (): ValidationContext => ({ seenElements: [] });
 
@@ -25,6 +25,25 @@ suite('ImageValidator Test Suite', () => {
     assert.strictEqual(violations.length, 0);
   });
 
+  test('img with generic alt token produces messages.img.generic with the alt appended', () => {
+    const node = new FakeNode('img', { src: '/me.jpg', alt: 'A .jpg' });
+    const violations = new ImageValidator().validate(node, ctx());
+    assert.strictEqual(
+      violations.find((v) => v.message.startsWith(messages.img.generic))
+        ?.message,
+      messages.img.generic + 'A .jpg',
+    );
+  });
+
+  test('img with descriptive non-generic alt produces no generic violation', () => {
+    const node = new FakeNode('img', {
+      src: '/me.jpg',
+      alt: 'A portrait of me',
+    });
+    const violations = new ImageValidator().validate(node, ctx());
+    assert.strictEqual(violations.length, 0);
+  });
+
   test('four images sharing the same alt produce a repeated violation on finalize', () => {
     const validator = new ImageValidator();
     const c = ctx();
@@ -40,7 +59,7 @@ suite('ImageValidator Test Suite', () => {
     const validator = new ImageValidator();
     const c = ctx();
     [0, 1, 2].forEach(() =>
-      validator.validate(new FakeNode('img', { alt: 'Beach' }), c)
+      validator.validate(new FakeNode('img', { alt: 'Beach' }), c),
     );
     assert.strictEqual(validator.finalize(c).length, 0);
   });
@@ -49,7 +68,7 @@ suite('ImageValidator Test Suite', () => {
     const validator = new ImageValidator();
     const c = ctx();
     [0, 1, 2, 3].forEach(() =>
-      validator.validate(new FakeNode('img', { alt: 'X' }), c)
+      validator.validate(new FakeNode('img', { alt: 'X' }), c),
     );
     assert.strictEqual(validator.finalize(c).length, 1);
 
