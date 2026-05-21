@@ -84,7 +84,10 @@ export class TSXDiagnosticGenerator {
 
     traverse(doc.ast, {
       JSXElement: (path) => {
-        const adapter = new TSXNodeAdapter(path.node);
+        const parentJSX = path.findParent((p) => p.isJSXElement())?.node as
+          | jsx.JSXElement
+          | undefined;
+        const adapter = new TSXNodeAdapter(path.node, parentJSX);
         const name = adapter.name;
         if (!name) {
           return;

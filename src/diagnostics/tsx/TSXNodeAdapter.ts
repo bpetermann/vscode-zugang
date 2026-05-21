@@ -33,7 +33,10 @@ import {
 } from '../utils/constants';
 
 export class TSXNodeAdapter implements AccessibilityNode {
-  constructor(private node: jsx.JSXElement) {}
+  constructor(
+    private node: jsx.JSXElement,
+    private parentNode?: jsx.JSXElement,
+  ) {}
 
   /**
    * Tag name of the JSX element. Returns `"Foo.Bar"` for member expressions,
@@ -132,21 +135,41 @@ export class TSXNodeAdapter implements AccessibilityNode {
   get children(): readonly AccessibilityNode[] {
     return this.node.children
       .filter((c) => c.type === JSX_ELEMENT)
-      .map((c) => new TSXNodeAdapter(c as jsx.JSXElement));
+      .map((c) => new TSXNodeAdapter(c as jsx.JSXElement, this.node));
   }
 
-  /** TSX adapter does not track parent — Babel traversal carries it separately. */
-  get parent(): undefined {
+  /** Enclosing JSXElement wrapped as a `TSXNodeAdapter`, or `undefined` at the root. */
+  get parent(): AccessibilityNode | undefined {
+    return this.parentNode ? new TSXNodeAdapter(this.parentNode) : undefined;
+  }
+
+  /** Nearest preceding JSXElement sibling, skipping JSXText/JSXExpressionContainer/JSXFragment. */
+  get previousElementSibling(): AccessibilityNode | undefined {
+    if (!this.parentNode) {
+      return undefined;
+    }
+    const siblings = this.parentNode.children;
+    const idx = siblings.indexOf(this.node);
+    for (let i = idx - 1; i >= 0; i--) {
+      if (siblings[i].type === JSX_ELEMENT) {
+        return new TSXNodeAdapter(siblings[i] as jsx.JSXElement, this.parentNode);
+      }
+    }
     return undefined;
   }
 
-  /** TSX adapter does not track siblings. */
-  get previousElementSibling(): undefined {
-    return undefined;
-  }
-
-  /** TSX adapter does not track siblings. */
-  get nextElementSibling(): undefined {
+  /** Nearest following JSXElement sibling, skipping JSXText/JSXExpressionContainer/JSXFragment. */
+  get nextElementSibling(): AccessibilityNode | undefined {
+    if (!this.parentNode) {
+      return undefined;
+    }
+    const siblings = this.parentNode.children;
+    const idx = siblings.indexOf(this.node);
+    for (let i = idx + 1; i < siblings.length; i++) {
+      if (siblings[i].type === JSX_ELEMENT) {
+        return new TSXNodeAdapter(siblings[i] as jsx.JSXElement, this.parentNode);
+      }
+    }
     return undefined;
   }
 
