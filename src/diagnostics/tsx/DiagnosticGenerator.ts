@@ -14,6 +14,7 @@ import { ButtonValidator } from '../validators/ButtonValidator';
 import { DivValidator } from '../validators/DivValidator';
 import { HeadingValidator } from '../validators/HeadingValidator';
 import { ImageValidator } from '../validators/ImageValidator';
+import { LinkValidator } from '../validators/LinkValidator';
 import { StyleValidator } from '../validators/StyleValidator';
 import { UniquenessValidator } from '../validators/UniquenessValidator';
 import { TSXNodeAdapter } from './TSXNodeAdapter';

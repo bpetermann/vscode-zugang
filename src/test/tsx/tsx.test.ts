@@ -277,7 +277,10 @@ suite('TSX Test Suite', () => {
     const document = await getDocument(content);
     const diagnostics = generateDiagnostics(document);
 
-    assert.strictEqual(diagnostics[0].message, messages.link.generic + text);
+    assert.strictEqual(
+      diagnostics[0].message,
+      `${messages.link.generic}"${text}"`,
+    );
   });
 
   test('<a> tag with a no description', async () => {
@@ -331,6 +334,45 @@ suite('TSX Test Suite', () => {
     assert.ok(
       diagnostics.some((d) => d.message === messages.div.abstract + 'widget'),
       `expected div.abstract widget; got: ${diagnostics
+        .map((d) => d.message)
+        .join(' | ')}`,
+    );
+  });
+
+  test('multiple <a> tags with none carrying aria-current fire messages.link.current', async () => {
+    const tsx = `<>
+      <a href="/home">home</a>
+      <a href="/products">products</a>
+      <a href="/contact">contact</a>
+    </>`;
+
+    const document = await getDocument(tsx);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.link.current),
+      `expected link.current; got: ${diagnostics
+        .map((d) => d.message)
+        .join(' | ')}`,
+    );
+  });
+
+  test('six sibling <a> tags outside <ul> fire messages.link.list', async () => {
+    const tsx = `<div>
+      <a href="/1" aria-current="page">one</a>
+      <a href="/2">two</a>
+      <a href="/3">three</a>
+      <a href="/4">four</a>
+      <a href="/5">five</a>
+      <a href="/6">six</a>
+    </div>`;
+
+    const document = await getDocument(tsx);
+    const diagnostics = generateDiagnostics(document);
+
+    assert.ok(
+      diagnostics.some((d) => d.message === messages.link.list),
+      `expected link.list; got: ${diagnostics
         .map((d) => d.message)
         .join(' | ')}`,
     );
