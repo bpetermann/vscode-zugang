@@ -17,7 +17,6 @@ import { ImageValidator } from '../validators/ImageValidator';
 import { StyleValidator } from '../validators/StyleValidator';
 import { UniquenessValidator } from '../validators/UniquenessValidator';
 import { TSXNodeAdapter } from './TSXNodeAdapter';
-import { LinkValidator } from './validators/Link';
 
 export interface TSXParsedDocument {
   ast: jsx.File;
