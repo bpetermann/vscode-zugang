@@ -11,6 +11,7 @@ import {
   ValidationContext,
 } from '../utils/RuleValidator';
 import { ButtonValidator } from '../validators/ButtonValidator';
+import { DivValidator } from '../validators/DivValidator';
 import { HeadingValidator } from '../validators/HeadingValidator';
 import { StyleValidator } from '../validators/StyleValidator';
 import { UniquenessValidator } from '../validators/UniquenessValidator';

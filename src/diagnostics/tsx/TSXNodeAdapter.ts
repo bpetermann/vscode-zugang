@@ -152,7 +152,10 @@ export class TSXNodeAdapter implements AccessibilityNode {
     const idx = siblings.indexOf(this.node);
     for (let i = idx - 1; i >= 0; i--) {
       if (siblings[i].type === JSX_ELEMENT) {
-        return new TSXNodeAdapter(siblings[i] as jsx.JSXElement, this.parentNode);
+        return new TSXNodeAdapter(
+          siblings[i] as jsx.JSXElement,
+          this.parentNode,
+        );
       }
     }
     return undefined;
@@ -167,7 +170,10 @@ export class TSXNodeAdapter implements AccessibilityNode {
     const idx = siblings.indexOf(this.node);
     for (let i = idx + 1; i < siblings.length; i++) {
       if (siblings[i].type === JSX_ELEMENT) {
-        return new TSXNodeAdapter(siblings[i] as jsx.JSXElement, this.parentNode);
+        return new TSXNodeAdapter(
+          siblings[i] as jsx.JSXElement,
+          this.parentNode,
+        );
       }
     }
     return undefined;
