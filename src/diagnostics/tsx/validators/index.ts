@@ -1,1 +1,0 @@
-export { ButtonValidator } from './Button';
