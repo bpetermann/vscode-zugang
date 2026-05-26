@@ -5,23 +5,27 @@ import { TAG } from '../utils/constants';
 import { buildDiagnostic } from '../utils/Diagnostic';
 import { ParseError } from '../utils/ParseError';
 import { PositionResolver, ZERO_RANGE } from '../utils/PositionResolver';
-import { RuleValidator, RuleViolation, ValidationContext } from '../utils/RuleValidator';
-import { HTMLNodeAdapter } from './HTMLNodeAdapter';
-import NodeOrganizer from './NodeOrganizer';
-import { ButtonValidator } from '../validators/ButtonValidator';
+import {
+  RuleValidator,
+  RuleViolation,
+  ValidationContext,
+} from '../utils/RuleValidator';
 import { AriaValidator } from '../validators/AriaValidator';
-import { FieldsetValidator } from '../validators/FieldsetValidator';
-import { StyleValidator } from '../validators/StyleValidator';
-import { NavigationValidator } from '../validators/NavigationValidator';
-import { SectionValidator } from '../validators/SectionValidator';
-import { ImageValidator } from '../validators/ImageValidator';
-import { UniquenessValidator } from '../validators/UniquenessValidator';
-import { RequiredValidator } from '../validators/RequiredValidator';
 import { AttributesValidator } from '../validators/AttributesValidator';
+import { ButtonValidator } from '../validators/ButtonValidator';
 import { DivValidator } from '../validators/DivValidator';
+import { FieldsetValidator } from '../validators/FieldsetValidator';
+import { HeadingValidator } from '../validators/HeadingValidator';
+import { ImageValidator } from '../validators/ImageValidator';
 import { InputValidator } from '../validators/InputValidator';
 import { LinkValidator } from '../validators/LinkValidator';
-import { HeadingValidator } from '../validators/HeadingValidator';
+import { NavigationValidator } from '../validators/NavigationValidator';
+import { RequiredValidator } from '../validators/RequiredValidator';
+import { SectionValidator } from '../validators/SectionValidator';
+import { StyleValidator } from '../validators/StyleValidator';
+import { UniquenessValidator } from '../validators/UniquenessValidator';
+import { HTMLNodeAdapter } from './HTMLNodeAdapter';
+import NodeOrganizer from './NodeOrganizer';
 
 export interface HTMLParsedDocument {
   tree: Document;
@@ -37,7 +41,7 @@ class HTMLPositionResolver implements PositionResolver {
     if (startIndex !== undefined && endIndex !== undefined) {
       return new vscode.Range(
         this.document.positionAt(startIndex),
-        this.document.positionAt(endIndex)
+        this.document.positionAt(endIndex),
       );
     }
     return ZERO_RANGE;
@@ -50,7 +54,10 @@ const defaultHTMLParser = (text: string): HTMLParsedDocument => {
       withStartIndices: true,
       withEndIndices: true,
     });
-    const tagNodes = DomUtils.filter((node) => node.type === TAG, tree.children);
+    const tagNodes = DomUtils.filter(
+      (node) => node.type === TAG,
+      tree.children,
+    );
     return { tree, organizer: new NodeOrganizer(tagNodes) };
   } catch (error) {
     throw new ParseError('Failed to parse HTML', { cause: error });
@@ -77,7 +84,7 @@ export class HTMLDiagnosticGenerator {
       new LinkValidator(),
       new HeadingValidator(),
     ],
-    private parser: (text: string) => HTMLParsedDocument = defaultHTMLParser
+    private parser: (text: string) => HTMLParsedDocument = defaultHTMLParser,
   ) {}
 
   /**
@@ -100,10 +107,10 @@ export class HTMLDiagnosticGenerator {
 
     this.ruleValidators.forEach((validator) => {
       doc.organizer.getNodes(validator.tags).forEach((el) => {
-        const adapter = new HTMLNodeAdapter(el);
+        const adapter = new HTMLNodeAdapter(el, this.htmlContent);
         validator.validate(adapter, context).forEach((violation) => {
           violations.push(
-            violation.node ? violation : { ...violation, node: adapter }
+            violation.node ? violation : { ...violation, node: adapter },
           );
         });
       });
@@ -125,7 +132,7 @@ export class HTMLDiagnosticGenerator {
    */
   public diagnose(
     violations: RuleViolation[],
-    _doc?: HTMLParsedDocument
+    _doc?: HTMLParsedDocument,
   ): vscode.Diagnostic[] {
     const resolver = new HTMLPositionResolver(this.document);
     return violations.map((v) => buildDiagnostic(v, resolver.resolve(v)));
