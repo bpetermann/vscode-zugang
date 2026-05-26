@@ -6,10 +6,8 @@ export interface NodeLocation {
 export interface AccessibilityNode {
   readonly name: string | undefined;
   readonly text: string;
-  /** Line/column location (1-indexed lines). Undefined for HTML nodes — use startIndex/endIndex instead. */
+  /** Canonical source position (1-indexed lines, 0-indexed columns). Populated by both adapters. */
   readonly loc: NodeLocation | null | undefined;
-  readonly startIndex: number | undefined;
-  readonly endIndex: number | undefined;
   readonly style: Record<string, string | number | boolean>;
   readonly children: readonly AccessibilityNode[];
   /** Parent element if known. HTML adapter exposes domhandler's parent; TSX adapter returns undefined. */

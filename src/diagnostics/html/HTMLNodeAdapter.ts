@@ -1,4 +1,5 @@
 import { Element, Text } from 'domhandler';
+import { AccessibilityNode, NodeLocation } from '../utils/AccessibilityNode';
 import {
   ABSTRACT_ROLES,
   BUTTON,
@@ -14,10 +15,12 @@ import {
   TEXTAREA,
   TRUE,
 } from '../utils/constants';
-import { AccessibilityNode } from '../utils/AccessibilityNode';
 
 export class HTMLNodeAdapter implements AccessibilityNode {
-  constructor(private element: Element) {}
+  constructor(
+    private element: Element,
+    private sourceText: string = '',
+  ) {}
 
   /** Tag name of the element (e.g. `"button"`, `"div"`). */
   get name(): string {
@@ -30,9 +33,24 @@ export class HTMLNodeAdapter implements AccessibilityNode {
     return child ? (child as Text).data : '';
   }
 
-  /** Always `null` for HTML nodes — use `startIndex`/`endIndex` for position. */
-  get loc() {
-    return null;
+  /**
+   * 1-indexed line + 0-indexed column position derived from the htmlparser2
+   * character offsets against the source text. Returns `null` when either the
+   * offsets or the source text are unavailable.
+   */
+  get loc(): NodeLocation | null {
+    const { startIndex, endIndex } = this;
+    if (
+      startIndex === undefined ||
+      endIndex === undefined ||
+      !this.sourceText
+    ) {
+      return null;
+    }
+    return {
+      start: offsetToLineColumn(this.sourceText, startIndex),
+      end: offsetToLineColumn(this.sourceText, endIndex),
+    };
   }
 
   /** Character offset of the opening tag start, as reported by htmlparser2. */
@@ -65,13 +83,15 @@ export class HTMLNodeAdapter implements AccessibilityNode {
   get children(): readonly AccessibilityNode[] {
     return this.element.children
       .filter((c) => c instanceof Element)
-      .map((c) => new HTMLNodeAdapter(c as Element));
+      .map((c) => new HTMLNodeAdapter(c as Element, this.sourceText));
   }
 
   /** Parent element if this element has one (skipping the Document root). */
   get parent(): AccessibilityNode | undefined {
     const p = this.element.parent;
-    return p instanceof Element ? new HTMLNodeAdapter(p) : undefined;
+    return p instanceof Element
+      ? new HTMLNodeAdapter(p, this.sourceText)
+      : undefined;
   }
 
   /** Previous sibling element (skips text nodes), if any. */
@@ -80,7 +100,9 @@ export class HTMLNodeAdapter implements AccessibilityNode {
     while (prev && !(prev instanceof Element)) {
       prev = prev.prev;
     }
-    return prev instanceof Element ? new HTMLNodeAdapter(prev) : undefined;
+    return prev instanceof Element
+      ? new HTMLNodeAdapter(prev, this.sourceText)
+      : undefined;
   }
 
   /** Next sibling element (skips text nodes), if any. */
@@ -89,7 +111,9 @@ export class HTMLNodeAdapter implements AccessibilityNode {
     while (next && !(next instanceof Element)) {
       next = next.next;
     }
-    return next instanceof Element ? new HTMLNodeAdapter(next) : undefined;
+    return next instanceof Element
+      ? new HTMLNodeAdapter(next, this.sourceText)
+      : undefined;
   }
 
   /** Returns the value of the named attribute, or `undefined` if absent. */
@@ -110,9 +134,11 @@ export class HTMLNodeAdapter implements AccessibilityNode {
   /** Returns the first direct child element with the given tag name, or `undefined`. */
   getChild(tag: string): AccessibilityNode | undefined {
     const child = this.element.children.find(
-      (c) => c instanceof Element && (c as Element).name === tag
+      (c) => c instanceof Element && (c as Element).name === tag,
     );
-    return child ? new HTMLNodeAdapter(child as Element) : undefined;
+    return child
+      ? new HTMLNodeAdapter(child as Element, this.sourceText)
+      : undefined;
   }
 
   /** Counts how many consecutive same-tag elements are nested directly inside each other. */
@@ -180,4 +206,20 @@ export class HTMLNodeAdapter implements AccessibilityNode {
     }
     return this.children.every((child) => child.canHaveAriaHidden());
   }
+}
+
+function offsetToLineColumn(
+  source: string,
+  offset: number,
+): { line: number; column: number } {
+  let line = 1;
+  let lineStart = 0;
+  const limit = Math.min(offset, source.length);
+  for (let i = 0; i < limit; i++) {
+    if (source.charCodeAt(i) === 10) {
+      line++;
+      lineStart = i + 1;
+    }
+  }
+  return { line, column: limit - lineStart };
 }

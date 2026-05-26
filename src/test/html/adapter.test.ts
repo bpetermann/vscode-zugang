@@ -24,16 +24,27 @@ suite('HTMLNodeAdapter Test Suite', () => {
   });
 
   suite('loc', () => {
-    test('is null (HTML uses startIndex/endIndex)', () => {
-      const adapter = new HTMLNodeAdapter(new Element('div', {}));
-      assert.strictEqual(adapter.loc, null);
+    test('derives 1-indexed line and 0-indexed column from char offsets and source text', () => {
+      // source layout (24 chars):
+      //   <div>\n  <p>hi</p>\n</div>
+      //   0    5  8       16
+      // <p>: startIndex 8, endIndex 16 (the closing '>') — both on line 2.
+      const source = '<div>\n  <p>hi</p>\n</div>';
+      const el = new Element('p', {});
+      el.startIndex = 8;
+      el.endIndex = 16;
+      const adapter = new HTMLNodeAdapter(el, source);
+      assert.deepStrictEqual(adapter.loc, {
+        start: { line: 2, column: 2 },
+        end: { line: 2, column: 10 },
+      });
     });
   });
 
   suite('startIndex / endIndex', () => {
     test('returns undefined when not set by parser', () => {
       const el = new Element('div', {});
-      const adapter = new HTMLNodeAdapter(el);
+      const adapter = new HTMLNodeAdapter(el, '');
       assert.strictEqual(adapter.startIndex, undefined);
       assert.strictEqual(adapter.endIndex, undefined);
     });
@@ -42,7 +53,7 @@ suite('HTMLNodeAdapter Test Suite', () => {
       const el = new Element('div', {});
       el.startIndex = 5;
       el.endIndex = 20;
-      const adapter = new HTMLNodeAdapter(el);
+      const adapter = new HTMLNodeAdapter(el, '');
       assert.strictEqual(adapter.startIndex, 5);
       assert.strictEqual(adapter.endIndex, 20);
     });
@@ -70,29 +81,38 @@ suite('HTMLNodeAdapter Test Suite', () => {
 
     test('returns undefined for missing attribute', () => {
       const el = new Element('div', {});
-      assert.strictEqual(new HTMLNodeAdapter(el).getAttribute('role'), undefined);
+      assert.strictEqual(
+        new HTMLNodeAdapter(el).getAttribute('role'),
+        undefined,
+      );
     });
   });
 
   suite('hasAttribute', () => {
     test('returns true when attribute exists', () => {
       const el = new Element('button', { disabled: '' });
-      assert.strictEqual(new HTMLNodeAdapter(el).hasAttribute('disabled'), true);
+      assert.strictEqual(
+        new HTMLNodeAdapter(el).hasAttribute('disabled'),
+        true,
+      );
     });
 
     test('returns false when attribute is absent', () => {
       const el = new Element('div', {});
-      assert.strictEqual(new HTMLNodeAdapter(el).hasAttribute('disabled'), false);
+      assert.strictEqual(
+        new HTMLNodeAdapter(el).hasAttribute('disabled'),
+        false,
+      );
     });
   });
 
   suite('getAttributes', () => {
     test('returns all attribute names', () => {
       const el = new Element('input', { type: 'text', id: 'name' });
-      assert.deepStrictEqual(
-        new HTMLNodeAdapter(el).getAttributes().sort(),
-        ['id', 'type']
-      );
+      assert.deepStrictEqual(new HTMLNodeAdapter(el).getAttributes().sort(), [
+        'id',
+        'type',
+      ]);
     });
   });
 
@@ -152,35 +172,41 @@ suite('HTMLNodeAdapter Test Suite', () => {
     test('button with no attributes is focusable', () => {
       assert.strictEqual(
         new HTMLNodeAdapter(new Element('button', {})).isNotFocusable(),
-        false
+        false,
       );
     });
 
     test('button with disabled is not focusable', () => {
       assert.strictEqual(
-        new HTMLNodeAdapter(new Element('button', { disabled: '' })).isNotFocusable(),
-        true
+        new HTMLNodeAdapter(
+          new Element('button', { disabled: '' }),
+        ).isNotFocusable(),
+        true,
       );
     });
 
     test('div is not focusable', () => {
       assert.strictEqual(
         new HTMLNodeAdapter(new Element('div', {})).isNotFocusable(),
-        true
+        true,
       );
     });
 
     test('div with positive tabindex is focusable', () => {
       assert.strictEqual(
-        new HTMLNodeAdapter(new Element('div', { tabindex: '1' })).isNotFocusable(),
-        false
+        new HTMLNodeAdapter(
+          new Element('div', { tabindex: '1' }),
+        ).isNotFocusable(),
+        false,
       );
     });
 
     test('a with href is focusable', () => {
       assert.strictEqual(
-        new HTMLNodeAdapter(new Element('a', { href: '/home' })).isNotFocusable(),
-        false
+        new HTMLNodeAdapter(
+          new Element('a', { href: '/home' }),
+        ).isNotFocusable(),
+        false,
       );
     });
   });
@@ -189,21 +215,23 @@ suite('HTMLNodeAdapter Test Suite', () => {
     test('plain div can have aria-hidden', () => {
       assert.strictEqual(
         new HTMLNodeAdapter(new Element('div', {})).canHaveAriaHidden(),
-        true
+        true,
       );
     });
 
     test('button cannot have aria-hidden', () => {
       assert.strictEqual(
         new HTMLNodeAdapter(new Element('button', {})).canHaveAriaHidden(),
-        false
+        false,
       );
     });
 
     test('button with disabled can have aria-hidden', () => {
       assert.strictEqual(
-        new HTMLNodeAdapter(new Element('button', { disabled: '' })).canHaveAriaHidden(),
-        true
+        new HTMLNodeAdapter(
+          new Element('button', { disabled: '' }),
+        ).canHaveAriaHidden(),
+        true,
       );
     });
 

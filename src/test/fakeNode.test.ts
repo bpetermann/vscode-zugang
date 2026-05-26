@@ -2,14 +2,12 @@ import assert from 'assert';
 import { FakeNode } from './FakeNode';
 
 suite('FakeNode Test Suite', () => {
-  suite('name / text / loc / startIndex / endIndex', () => {
+  suite('name / text / loc', () => {
     test('defaults are correct', () => {
       const node = new FakeNode();
       assert.strictEqual(node.name, undefined);
       assert.strictEqual(node.text, '');
       assert.strictEqual(node.loc, null);
-      assert.strictEqual(node.startIndex, undefined);
-      assert.strictEqual(node.endIndex, undefined);
     });
 
     test('constructor sets name', () => {
@@ -28,7 +26,10 @@ suite('FakeNode Test Suite', () => {
     });
 
     test('hasAttribute returns true when present', () => {
-      assert.strictEqual(new FakeNode('button', { disabled: '' }).hasAttribute('disabled'), true);
+      assert.strictEqual(
+        new FakeNode('button', { disabled: '' }).hasAttribute('disabled'),
+        true,
+      );
     });
 
     test('hasAttribute returns false when absent', () => {
@@ -92,7 +93,10 @@ suite('FakeNode Test Suite', () => {
     });
 
     test('button with disabled is not focusable', () => {
-      assert.strictEqual(new FakeNode('button', { disabled: '' }).isNotFocusable(), true);
+      assert.strictEqual(
+        new FakeNode('button', { disabled: '' }).isNotFocusable(),
+        true,
+      );
     });
 
     test('div is not focusable', () => {
@@ -100,15 +104,24 @@ suite('FakeNode Test Suite', () => {
     });
 
     test('div with positive tabindex is focusable', () => {
-      assert.strictEqual(new FakeNode('div', { tabindex: '1' }).isNotFocusable(), false);
+      assert.strictEqual(
+        new FakeNode('div', { tabindex: '1' }).isNotFocusable(),
+        false,
+      );
     });
 
     test('div with tabindex -1 is not focusable', () => {
-      assert.strictEqual(new FakeNode('div', { tabindex: '-1' }).isNotFocusable(), true);
+      assert.strictEqual(
+        new FakeNode('div', { tabindex: '-1' }).isNotFocusable(),
+        true,
+      );
     });
 
     test('a with href is focusable', () => {
-      assert.strictEqual(new FakeNode('a', { href: '/home' }).isNotFocusable(), false);
+      assert.strictEqual(
+        new FakeNode('a', { href: '/home' }).isNotFocusable(),
+        false,
+      );
     });
 
     test('a without href is not focusable', () => {
@@ -116,15 +129,24 @@ suite('FakeNode Test Suite', () => {
     });
 
     test('div with contenteditable=true is focusable', () => {
-      assert.strictEqual(new FakeNode('div', { contenteditable: 'true' }).isNotFocusable(), false);
+      assert.strictEqual(
+        new FakeNode('div', { contenteditable: 'true' }).isNotFocusable(),
+        false,
+      );
     });
 
     test('div with role=button is focusable', () => {
-      assert.strictEqual(new FakeNode('div', { role: 'button' }).isNotFocusable(), false);
+      assert.strictEqual(
+        new FakeNode('div', { role: 'button' }).isNotFocusable(),
+        false,
+      );
     });
 
     test('button with inert is not focusable', () => {
-      assert.strictEqual(new FakeNode('button', { inert: '' }).isNotFocusable(), true);
+      assert.strictEqual(
+        new FakeNode('button', { inert: '' }).isNotFocusable(),
+        true,
+      );
     });
   });
 
@@ -138,7 +160,10 @@ suite('FakeNode Test Suite', () => {
     });
 
     test('button with disabled can have aria-hidden', () => {
-      assert.strictEqual(new FakeNode('button', { disabled: '' }).canHaveAriaHidden(), true);
+      assert.strictEqual(
+        new FakeNode('button', { disabled: '' }).canHaveAriaHidden(),
+        true,
+      );
     });
 
     test('div with focusable child cannot have aria-hidden', () => {

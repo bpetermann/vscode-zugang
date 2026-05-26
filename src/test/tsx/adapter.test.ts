@@ -38,21 +38,13 @@ suite('TSXNodeAdapter Test Suite', () => {
   });
 
   suite('loc', () => {
-    test('returns a NodeLocation with start/end line and column', () => {
-      const node = parseJSX('<div />');
-      const loc = new TSXNodeAdapter(node).loc;
-      assert.ok(loc);
-      assert.strictEqual(typeof loc.start.line, 'number');
-      assert.strictEqual(typeof loc.start.column, 'number');
-    });
-  });
-
-  suite('startIndex / endIndex', () => {
-    test('both are always undefined for TSX nodes', () => {
-      const node = parseJSX('<div />');
-      const adapter = new TSXNodeAdapter(node);
-      assert.strictEqual(adapter.startIndex, undefined);
-      assert.strictEqual(adapter.endIndex, undefined);
+    test('returns 1-indexed line and 0-indexed column shape matching the HTML adapter', () => {
+      // <div /> sits at offset 0..7 on line 1.
+      const loc = new TSXNodeAdapter(parseJSX('<div />')).loc;
+      assert.deepStrictEqual(loc, {
+        start: { line: 1, column: 0 },
+        end: { line: 1, column: 7 },
+      });
     });
   });
 

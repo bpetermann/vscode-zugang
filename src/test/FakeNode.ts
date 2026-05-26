@@ -1,4 +1,7 @@
-import { AccessibilityNode, NodeLocation } from '../diagnostics/utils/AccessibilityNode';
+import {
+  AccessibilityNode,
+  NodeLocation,
+} from '../diagnostics/utils/AccessibilityNode';
 import {
   ABSTRACT_ROLES,
   BUTTON,
@@ -23,8 +26,6 @@ export class FakeNode implements AccessibilityNode {
   name: string | undefined;
   text: string = '';
   loc: NodeLocation | null | undefined = null;
-  startIndex: number | undefined = undefined;
-  endIndex: number | undefined = undefined;
   style: Record<string, string | number | boolean> = {};
   children: FakeNode[] = [];
   parent: FakeNode | undefined = undefined;
@@ -35,7 +36,7 @@ export class FakeNode implements AccessibilityNode {
   constructor(
     name?: string,
     attribs: Record<string, string> = {},
-    children: FakeNode[] = []
+    children: FakeNode[] = [],
   ) {
     this.name = name;
     this.attribs = attribs;
@@ -78,7 +79,9 @@ export class FakeNode implements AccessibilityNode {
 
   isNotFocusable(): boolean {
     const name = this.name ?? '';
-    const isFormControl = ([INPUT, BUTTON, TEXTAREA, SELECT] as string[]).includes(name);
+    const isFormControl = (
+      [INPUT, BUTTON, TEXTAREA, SELECT] as string[]
+    ).includes(name);
     const isLink = name === LINK;
 
     const rawTabIndex = this.attribs[TABINDEX];

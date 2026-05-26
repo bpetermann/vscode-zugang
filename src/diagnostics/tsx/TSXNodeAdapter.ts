@@ -70,7 +70,7 @@ export class TSXNodeAdapter implements AccessibilityNode {
     return child?.value ?? '';
   }
 
-  /** Source location (1-indexed lines) from the Babel AST, or `null`/`undefined` if unavailable. */
+  /** Source location (1-indexed lines, 0-indexed columns) from the Babel AST, or `null`/`undefined` if unavailable. */
   get loc(): NodeLocation | null | undefined {
     const l = this.node.loc;
     if (!l) {
@@ -80,16 +80,6 @@ export class TSXNodeAdapter implements AccessibilityNode {
       start: { line: l.start.line, column: l.start.column },
       end: { line: l.end.line, column: l.end.column },
     };
-  }
-
-  /** Always `undefined` for TSX nodes — use `loc` for position. */
-  get startIndex(): undefined {
-    return undefined;
-  }
-
-  /** Always `undefined` for TSX nodes — use `loc` for position. */
-  get endIndex(): undefined {
-    return undefined;
   }
 
   /**
