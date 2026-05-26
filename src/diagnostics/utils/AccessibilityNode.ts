@@ -10,11 +10,11 @@ export interface AccessibilityNode {
   readonly loc: NodeLocation | null | undefined;
   readonly style: Record<string, string | number | boolean>;
   readonly children: readonly AccessibilityNode[];
-  /** Parent element if known. HTML adapter exposes domhandler's parent; TSX adapter returns undefined. */
+  /** Parent element if known. */
   readonly parent: AccessibilityNode | undefined;
-  /** Previous sibling element (skipping text/whitespace). HTML adapter only. */
+  /** Previous sibling element (skipping text/whitespace). */
   readonly previousElementSibling: AccessibilityNode | undefined;
-  /** Next sibling element (skipping text/whitespace). HTML adapter only. */
+  /** Next sibling element (skipping text/whitespace). */
   readonly nextElementSibling: AccessibilityNode | undefined;
   getAttribute(name: string): string | undefined;
   hasAttribute(name: string): boolean;
